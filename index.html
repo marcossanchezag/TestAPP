@@ -1,33 +1,221 @@
-// index.html
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Quiz App Web</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .card-shadow {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-success {
+      background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(72, 187, 120, 0.4);
+    }
+    
+    .option-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .option-card:hover {
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-in;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .file-input {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    
+    .file-input input[type=file] {
+      position: absolute;
+      left: -9999px;
+    }
+    
+    .stats-card {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    @media (max-width: 640px) {
+      .container-mobile {
+        padding: 1rem;
+      }
+      
+      .text-responsive {
+        font-size: 1.5rem;
+      }
+      
+      .btn-mobile {
+        width: 100%;
+        margin: 0.5rem 0;
+      }
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
-  <h1 class="text-2xl font-bold mb-4">Quiz App Web</h1>
-
-  <div class="w-full max-w-xl space-y-4">
-    <div class="flex flex-col space-y-2">
-      <label for="fileInput" class="font-semibold">Cargar archivo CSV:</label>
-      <input type="file" id="fileInput" accept=".csv" class="p-2 border rounded" />
+<body class="gradient-bg min-h-screen">
+  <div class="container mx-auto px-4 py-8 container-mobile">
+    <!-- Header -->
+    <div class="text-center mb-8 fade-in">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2 text-responsive">
+        🧠 Quiz App
+      </h1>
+      <p class="text-white opacity-90 text-lg">Pon a prueba tus conocimientos</p>
     </div>
 
-    <div class="flex flex-col space-y-2">
-      <label for="temaSelect" class="font-semibold">Seleccionar temas:</label>
-      <select id="temaSelect" multiple class="p-2 border rounded h-32"></select>
-      <button id="filtrarTemas" class="bg-blue-500 text-white px-4 py-2 rounded mt-2">Filtrar por Temas</button>
-    </div>
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto">
+      <!-- File Upload Section -->
+      <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
+        <div class="flex items-center mb-4">
+          <div class="bg-blue-100 p-3 rounded-full mr-4">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-semibold text-gray-800">Cargar Preguntas</h2>
+        </div>
+        
+        <div class="file-input w-full">
+          <label for="fileInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+              <svg class="w-8 h-8 mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              <p class="mb-2 text-sm text-gray-500">
+                <span class="font-semibold">Click para cargar</span> o arrastra tu archivo CSV
+              </p>
+              <p class="text-xs text-gray-500">Solo archivos CSV</p>
+            </div>
+          </label>
+          <input type="file" id="fileInput" accept=".csv" />
+        </div>
+      </div>
 
-    <div id="quiz" class="hidden">
-      <div id="pregunta" class="text-lg font-semibold"></div>
-      <div id="opciones" class="space-y-2 mt-4"></div>
-      <button id="comprobar" class="bg-green-500 text-white px-4 py-2 rounded mt-4">Comprobar Respuesta</button>
-      <button id="siguiente" class="bg-blue-500 text-white px-4 py-2 rounded mt-2">Siguiente Pregunta</button>
-      <div id="estadisticas" class="mt-4 text-sm text-gray-700"></div>
+      <!-- Theme Selection -->
+      <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
+        <div class="flex items-center mb-4">
+          <div class="bg-purple-100 p-3 rounded-full mr-4">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-semibold text-gray-800">Seleccionar Temas</h2>
+        </div>
+        
+        <select id="temaSelect" multiple class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors h-40 mb-4">
+        </select>
+        
+        <button id="filtrarTemas" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
+          🚀 Comenzar Quiz
+        </button>
+      </div>
+
+      <!-- Quiz Section -->
+      <div id="quiz" class="hidden">
+        <!-- Question Card -->
+        <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
+          <div class="flex items-start mb-6">
+            <div class="bg-green-100 p-3 rounded-full mr-4 flex-shrink-0">
+              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-600 mb-2">Pregunta</h3>
+              <div id="pregunta" class="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed"></div>
+            </div>
+          </div>
+          
+          <div id="opciones" class="space-y-3"></div>
+          
+          <div class="flex flex-col md:flex-row gap-4 mt-8">
+            <button id="comprobar" class="btn-success text-white px-8 py-3 rounded-xl font-semibold btn-mobile">
+              ✓ Comprobar Respuesta
+            </button>
+            <button id="siguiente" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold btn-mobile">
+              → Siguiente Pregunta
+            </button>
+          </div>
+        </div>
+
+        <!-- Statistics Card -->
+        <div class="stats-card rounded-2xl card-shadow p-6 md:p-8 fade-in">
+          <div class="flex items-center justify-between text-white">
+            <div>
+              <h3 class="text-lg font-semibold mb-2">📊 Estadísticas</h3>
+              <div id="estadisticas" class="text-2xl font-bold"></div>
+            </div>
+            <div class="bg-white bg-opacity-20 p-4 rounded-full">
+              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -61,6 +249,9 @@
 
         mostrarTemasUnicos();
         document.getElementById('quiz').classList.add('hidden');
+        
+        // Show success message
+        showNotification('✅ Archivo cargado correctamente', 'success');
       };
       reader.readAsText(file);
     }
@@ -68,14 +259,14 @@
     function mostrarTemasUnicos() {
       const temas = [...new Set(preguntas.map(p => p.tema))];
       const select = document.getElementById('temaSelect');
-      select.innerHTML = temas.map(t => `<option value="${t}">${t}</option>`).join('');
+      select.innerHTML = temas.map(t => `<option value="${t}" class="p-2">${t}</option>`).join('');
     }
 
     function aplicarFiltroTemas() {
       const seleccionados = Array.from(document.getElementById('temaSelect').selectedOptions).map(o => o.value);
       preguntasFiltradas = preguntas.filter(p => seleccionados.includes(p.tema));
       if (preguntasFiltradas.length === 0) {
-        alert('Selecciona al menos un tema con preguntas');
+        showNotification('⚠️ Selecciona al menos un tema con preguntas', 'warning');
         return;
       }
       iniciarQuiz();
@@ -87,23 +278,34 @@
       totalRespondidas = 0;
       preguntasFiltradas = preguntasFiltradas.sort(() => Math.random() - 0.5);
       document.getElementById('quiz').classList.remove('hidden');
+      document.getElementById('quiz').scrollIntoView({ behavior: 'smooth' });
       mostrarPregunta();
+      showNotification('🎉 ¡Quiz iniciado! ¡Buena suerte!', 'success');
     }
 
     function mostrarPregunta() {
       const p = preguntasFiltradas[preguntaActual];
       document.getElementById('pregunta').textContent = p.pregunta;
       document.getElementById('opciones').innerHTML = p.opciones.map((op, i) => `
-        <label class="block">
-          <input type="radio" name="opcion" value="${i}" class="mr-2">${op}
+        <label class="option-card flex items-center p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-all">
+          <input type="radio" name="opcion" value="${i}" class="mr-4 w-5 h-5 text-blue-600">
+          <span class="text-lg">${op}</span>
         </label>`).join('');
       actualizarEstadisticas();
+      
+      // Add fade-in animation to options
+      setTimeout(() => {
+        document.querySelectorAll('.option-card').forEach((card, index) => {
+          card.style.animationDelay = `${index * 0.1}s`;
+          card.classList.add('fade-in');
+        });
+      }, 100);
     }
 
     function comprobar() {
       const seleccionada = document.querySelector('input[name="opcion"]:checked');
       if (!seleccionada) {
-        alert('Selecciona una opción');
+        showNotification('⚠️ Selecciona una opción', 'warning');
         return;
       }
       totalRespondidas++;
@@ -112,21 +314,26 @@
 
       if (valor === correcta) {
         aciertos++;
-        seleccionada.parentElement.classList.add('text-green-600');
-        alert('¡Correcto!');
+        seleccionada.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
+        seleccionada.parentElement.classList.remove('bg-gray-50');
+        showNotification('🎉 ¡Correcto!', 'success');
       } else {
-        seleccionada.parentElement.classList.add('text-red-600');
+        seleccionada.parentElement.classList.add('bg-red-100', 'border-2', 'border-red-500');
+        seleccionada.parentElement.classList.remove('bg-gray-50');
         const correctOption = document.querySelector(`input[value='${correcta}']`);
-        correctOption.parentElement.classList.add('text-green-600');
-        alert('Incorrecto');
+        correctOption.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
+        correctOption.parentElement.classList.remove('bg-gray-50');
+        showNotification('❌ Incorrecto', 'error');
       }
       document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = true);
+      actualizarEstadisticas();
     }
 
     function siguiente() {
       preguntaActual++;
       if (preguntaActual >= preguntasFiltradas.length) {
-        alert(`Quiz finalizado.\nAciertos: ${aciertos}/${totalRespondidas}`);
+        const percentage = (aciertos / totalRespondidas * 100).toFixed(1);
+        showNotification(`🏆 Quiz finalizado!\n✅ Aciertos: ${aciertos}/${totalRespondidas} (${percentage}%)`, 'success');
         document.getElementById('quiz').classList.add('hidden');
         return;
       }
@@ -135,7 +342,52 @@
 
     function actualizarEstadisticas() {
       const percent = totalRespondidas > 0 ? (aciertos / totalRespondidas * 100).toFixed(1) : 0;
-      document.getElementById('estadisticas').textContent = `Aciertos: ${aciertos}/${totalRespondidas} (${percent}%)`;
+      document.getElementById('estadisticas').innerHTML = `
+        <div class="flex items-center space-x-4">
+          <span>Aciertos: ${aciertos}/${totalRespondidas}</span>
+          <span class="text-2xl">•</span>
+          <span>${percent}%</span>
+        </div>
+      `;
+    }
+
+    function showNotification(message, type = 'info') {
+      // Create notification element
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+      
+      // Set colors based on type
+      const colors = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        warning: 'bg-yellow-500 text-white',
+        info: 'bg-blue-500 text-white'
+      };
+      
+      notification.className += ` ${colors[type] || colors.info}`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <span class="flex-1 font-medium whitespace-pre-line">${message}</span>
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Animate in
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 100);
+      
+      // Auto remove after 5 seconds
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => notification.remove(), 300);
+      }, 5000);
     }
   </script>
 </body>
