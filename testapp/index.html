@@ -1,0 +1,142 @@
+// index.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz App Web</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-2xl font-bold mb-4">Quiz App Web</h1>
+
+  <div class="w-full max-w-xl space-y-4">
+    <div class="flex flex-col space-y-2">
+      <label for="fileInput" class="font-semibold">Cargar archivo CSV:</label>
+      <input type="file" id="fileInput" accept=".csv" class="p-2 border rounded" />
+    </div>
+
+    <div class="flex flex-col space-y-2">
+      <label for="temaSelect" class="font-semibold">Seleccionar temas:</label>
+      <select id="temaSelect" multiple class="p-2 border rounded h-32"></select>
+      <button id="filtrarTemas" class="bg-blue-500 text-white px-4 py-2 rounded mt-2">Filtrar por Temas</button>
+    </div>
+
+    <div id="quiz" class="hidden">
+      <div id="pregunta" class="text-lg font-semibold"></div>
+      <div id="opciones" class="space-y-2 mt-4"></div>
+      <button id="comprobar" class="bg-green-500 text-white px-4 py-2 rounded mt-4">Comprobar Respuesta</button>
+      <button id="siguiente" class="bg-blue-500 text-white px-4 py-2 rounded mt-2">Siguiente Pregunta</button>
+      <div id="estadisticas" class="mt-4 text-sm text-gray-700"></div>
+    </div>
+  </div>
+
+  <script>
+    let preguntas = [],
+        preguntasFiltradas = [],
+        preguntaActual = 0,
+        aciertos = 0,
+        totalRespondidas = 0;
+
+    document.getElementById('fileInput').addEventListener('change', handleFile);
+    document.getElementById('comprobar').addEventListener('click', comprobar);
+    document.getElementById('siguiente').addEventListener('click', siguiente);
+    document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        preguntas = lines.map((line, i) => {
+          const parts = line.match(/(?:"[^"]*"|[^,])+/g)?.map(p => p.replace(/^"|"$/g, '').trim());
+          if (!parts || parts.length < 7) return null;
+          return {
+            tema: parts[0],
+            pregunta: parts[1],
+            opciones: parts.slice(2, 6),
+            correcta: parseInt(parts[6]) - 1
+          };
+        }).filter(Boolean);
+
+        mostrarTemasUnicos();
+        document.getElementById('quiz').classList.add('hidden');
+      };
+      reader.readAsText(file);
+    }
+
+    function mostrarTemasUnicos() {
+      const temas = [...new Set(preguntas.map(p => p.tema))];
+      const select = document.getElementById('temaSelect');
+      select.innerHTML = temas.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
+
+    function aplicarFiltroTemas() {
+      const seleccionados = Array.from(document.getElementById('temaSelect').selectedOptions).map(o => o.value);
+      preguntasFiltradas = preguntas.filter(p => seleccionados.includes(p.tema));
+      if (preguntasFiltradas.length === 0) {
+        alert('Selecciona al menos un tema con preguntas');
+        return;
+      }
+      iniciarQuiz();
+    }
+
+    function iniciarQuiz() {
+      preguntaActual = 0;
+      aciertos = 0;
+      totalRespondidas = 0;
+      preguntasFiltradas = preguntasFiltradas.sort(() => Math.random() - 0.5);
+      document.getElementById('quiz').classList.remove('hidden');
+      mostrarPregunta();
+    }
+
+    function mostrarPregunta() {
+      const p = preguntasFiltradas[preguntaActual];
+      document.getElementById('pregunta').textContent = p.pregunta;
+      document.getElementById('opciones').innerHTML = p.opciones.map((op, i) => `
+        <label class="block">
+          <input type="radio" name="opcion" value="${i}" class="mr-2">${op}
+        </label>`).join('');
+      actualizarEstadisticas();
+    }
+
+    function comprobar() {
+      const seleccionada = document.querySelector('input[name="opcion"]:checked');
+      if (!seleccionada) {
+        alert('Selecciona una opción');
+        return;
+      }
+      totalRespondidas++;
+      const valor = parseInt(seleccionada.value);
+      const correcta = preguntasFiltradas[preguntaActual].correcta;
+
+      if (valor === correcta) {
+        aciertos++;
+        seleccionada.parentElement.classList.add('text-green-600');
+        alert('¡Correcto!');
+      } else {
+        seleccionada.parentElement.classList.add('text-red-600');
+        const correctOption = document.querySelector(`input[value='${correcta}']`);
+        correctOption.parentElement.classList.add('text-green-600');
+        alert('Incorrecto');
+      }
+      document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = true);
+    }
+
+    function siguiente() {
+      preguntaActual++;
+      if (preguntaActual >= preguntasFiltradas.length) {
+        alert(`Quiz finalizado.\nAciertos: ${aciertos}/${totalRespondidas}`);
+        document.getElementById('quiz').classList.add('hidden');
+        return;
+      }
+      mostrarPregunta();
+    }
+
+    function actualizarEstadisticas() {
+      const percent = totalRespondidas > 0 ? (aciertos / totalRespondidas * 100).toFixed(1) : 0;
+      document.getElementById('estadisticas').textContent = `Aciertos: ${aciertos}/${totalRespondidas} (${percent}%)`;
+    }
+  </script>
+</body>
+</html>
