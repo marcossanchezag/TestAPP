@@ -171,6 +171,17 @@
         <button id="filtrarTemas" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
           🚀 Comenzar Quiz
         </button>
+        
+        <!-- Data management buttons -->
+        <div class="flex flex-col md:flex-row gap-2 mt-4">
+          <button onclick="cargarPreguntasGuardadas()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            📚 Cargar Guardadas
+          </button>
+          <button onclick="limpiarDatos()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            🗑️ Limpiar Datos
+          </button>
+          <span id="datosStatus" class="text-sm text-gray-600 flex items-center px-2"></span>
+        </div>
       </div>
 
       <!-- Quiz Section -->
@@ -226,40 +237,151 @@
         aciertos = 0,
         totalRespondidas = 0;
 
-    document.getElementById('fileInput').addEventListener('change', handleFile);
+    // Persistent storage functions
+    function guardarPreguntas() {
+      const preguntasData = {
+        preguntas: preguntas,
+        timestamp: Date.now()
+      };
+      // Using in-memory storage as persistent alternative
+      window.quizData = preguntasData;
+      
+      // Also save to a hidden element for session persistence
+      let dataElement = document.getElementById('hiddenData');
+      if (!dataElement) {
+        dataElement = document.createElement('div');
+        dataElement.id = 'hiddenData';
+        dataElement.style.display = 'none';
+        document.body.appendChild(dataElement);
+      }
+      dataElement.textContent = JSON.stringify(preguntasData);
+      
+      showNotification('💾 Preguntas guardadas', 'info');
+    }
+
+    function cargarPreguntasGuardadas() {
+      // First try to load from window object
+      if (window.quizData && window.quizData.preguntas) {
+        preguntas = window.quizData.preguntas;
+        mostrarTemasUnicos();
+        const fechaGuardado = new Date(window.quizData.timestamp).toLocaleString();
+        showNotification(`📚 Preguntas cargadas (guardadas: ${fechaGuardado})`, 'info');
+        return true;
+      }
+      
+      // Try to load from hidden element
+      const dataElement = document.getElementById('hiddenData');
+      if (dataElement && dataElement.textContent) {
+        try {
+          const data = JSON.parse(dataElement.textContent);
+          if (data.preguntas && data.preguntas.length > 0) {
+            preguntas = data.preguntas;
+            window.quizData = data;
+            mostrarTemasUnicos();
+            const fechaGuardado = new Date(data.timestamp).toLocaleString();
+            showNotification(`📚 Preguntas cargadas (guardadas: ${fechaGuardado})`, 'info');
+            return true;
+          }
+        } catch (e) {
+          console.log('No previous data found');
+        }
+      }
+      
+      return false;
+    }
+
+    function limpiarDatos() {
+      preguntas = [];
+      preguntasFiltradas = [];
+      window.quizData = null;
+      const dataElement = document.getElementById('hiddenData');
+      if (dataElement) {
+        dataElement.textContent = '';
+      }
+      document.getElementById('temaSelect').innerHTML = '';
+      document.getElementById('quiz').classList.add('hidden');
+      showNotification('🗑️ Datos eliminados', 'info');
+    }
     document.getElementById('comprobar').addEventListener('click', comprobar);
     document.getElementById('siguiente').addEventListener('click', siguiente);
     document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
 
     function handleFile(event) {
       const file = event.target.files[0];
+      if (!file) return;
+      
       const reader = new FileReader();
       reader.onload = e => {
-        const lines = e.target.result.split('\n').filter(l => l.trim());
-        preguntas = lines.map((line, i) => {
-          const parts = line.match(/(?:"[^"]*"|[^,])+/g)?.map(p => p.replace(/^"|"$/g, '').trim());
-          if (!parts || parts.length < 7) return null;
-          return {
-            tema: parts[0],
-            pregunta: parts[1],
-            opciones: parts.slice(2, 6),
-            correcta: parseInt(parts[6]) - 1
-          };
-        }).filter(Boolean);
+        try {
+          const lines = e.target.result.split('\n').filter(l => l.trim());
+          preguntas = [];
+          
+          lines.forEach((line, index) => {
+            if (index === 0 && (line.toLowerCase().includes('tema') || line.toLowerCase().includes('pregunta'))) {
+              return; // Skip header row
+            }
+            
+            // Better CSV parsing
+            const parts = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+              const char = line[i];
+              if (char === '"') {
+                inQuotes = !inQuotes;
+              } else if (char === ',' && !inQuotes) {
+                parts.push(current.trim());
+                current = '';
+              } else {
+                current += char;
+              }
+            }
+            parts.push(current.trim()); // Add the last part
+            
+            if (parts.length >= 7) {
+              const pregunta = {
+                tema: parts[0].replace(/^"|"$/g, ''),
+                pregunta: parts[1].replace(/^"|"$/g, ''),
+                opciones: parts.slice(2, 6).map(op => op.replace(/^"|"$/g, '')),
+                correcta: parseInt(parts[6]) - 1
+              };
+              
+              if (pregunta.tema && pregunta.pregunta && pregunta.opciones.every(op => op)) {
+                preguntas.push(pregunta);
+              }
+            }
+          });
 
-        mostrarTemasUnicos();
-        document.getElementById('quiz').classList.add('hidden');
-        
-        // Show success message
-        showNotification('✅ Archivo cargado correctamente', 'success');
+          if (preguntas.length === 0) {
+            showNotification('❌ No se encontraron preguntas válidas en el archivo', 'error');
+            return;
+          }
+
+          // Save to persistent storage
+          guardarPreguntas();
+          mostrarTemasUnicos();
+          document.getElementById('quiz').classList.add('hidden');
+          
+          showNotification(`✅ ${preguntas.length} preguntas cargadas correctamente`, 'success');
+        } catch (error) {
+          console.error('Error parsing CSV:', error);
+          showNotification('❌ Error al procesar el archivo CSV', 'error');
+        }
       };
-      reader.readAsText(file);
+      reader.readAsText(file, 'UTF-8');
     }
 
     function mostrarTemasUnicos() {
       const temas = [...new Set(preguntas.map(p => p.tema))];
       const select = document.getElementById('temaSelect');
       select.innerHTML = temas.map(t => `<option value="${t}" class="p-2">${t}</option>`).join('');
+      
+      // Update status
+      const statusElement = document.getElementById('datosStatus');
+      if (statusElement) {
+        statusElement.textContent = `${preguntas.length} preguntas, ${temas.length} temas`;
+      }
     }
 
     function aplicarFiltroTemas() {
