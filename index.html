@@ -99,6 +99,21 @@
       background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     }
     
+    .storage-indicator {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      color: white;
+      font-size: 0.875rem;
+    }
+    
+    .storage-indicator.active {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+    
     @media (max-width: 640px) {
       .container-mobile {
         padding: 1rem;
@@ -123,6 +138,9 @@
         🧠 Quiz App
       </h1>
       <p class="text-white opacity-90 text-lg">Pon a prueba tus conocimientos</p>
+      <div id="storageIndicator" class="storage-indicator mt-4 mx-auto">
+        <span id="storageStatus">💾 Sin datos guardados</span>
+      </div>
     </div>
 
     <!-- Main Content -->
@@ -152,6 +170,15 @@
           </label>
           <input type="file" id="fileInput" accept=".csv" />
         </div>
+        
+        <!-- CSV Format Example -->
+        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h4 class="font-semibold text-gray-700 mb-2">📝 Formato CSV esperado:</h4>
+          <code class="text-sm text-gray-600">
+            Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta<br>
+            Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
+          </code>
+        </div>
       </div>
 
       <!-- Theme Selection -->
@@ -176,6 +203,9 @@
         <div class="flex flex-col md:flex-row gap-2 mt-4">
           <button onclick="cargarPreguntasGuardadas()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
             📚 Cargar Guardadas
+          </button>
+          <button onclick="exportarPreguntas()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            📤 Exportar CSV
           </button>
           <button onclick="limpiarDatos()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
             🗑️ Limpiar Datos
@@ -237,16 +267,27 @@
         aciertos = 0,
         totalRespondidas = 0;
 
-    // Persistent storage functions
+    // Improved storage system using cookies as fallback
     function guardarPreguntas() {
       const preguntasData = {
         preguntas: preguntas,
         timestamp: Date.now()
       };
-      // Using in-memory storage as persistent alternative
+      
+      // Primary storage: window object
       window.quizData = preguntasData;
       
-      // Also save to a hidden element for session persistence
+      // Secondary storage: cookies (with size limit)
+      try {
+        const dataStr = JSON.stringify(preguntasData);
+        if (dataStr.length < 4000) { // Cookie size limit
+          document.cookie = `quizData=${encodeURIComponent(dataStr)}; path=/; expires=${new Date(Date.now() + 30*24*60*60*1000).toUTCString()}`;
+        }
+      } catch (e) {
+        console.log('Cookie storage failed:', e);
+      }
+      
+      // Tertiary storage: hidden element
       let dataElement = document.getElementById('hiddenData');
       if (!dataElement) {
         dataElement = document.createElement('div');
@@ -256,20 +297,42 @@
       }
       dataElement.textContent = JSON.stringify(preguntasData);
       
-      showNotification('💾 Preguntas guardadas', 'info');
+      updateStorageIndicator();
+      showNotification('💾 Preguntas guardadas correctamente', 'success');
     }
 
     function cargarPreguntasGuardadas() {
-      // First try to load from window object
-      if (window.quizData && window.quizData.preguntas) {
+      // Try window object first
+      if (window.quizData && window.quizData.preguntas && window.quizData.preguntas.length > 0) {
         preguntas = window.quizData.preguntas;
         mostrarTemasUnicos();
-        const fechaGuardado = new Date(window.quizData.timestamp).toLocaleString();
-        showNotification(`📚 Preguntas cargadas (guardadas: ${fechaGuardado})`, 'info');
+        updateStorageIndicator();
+        showNotification(`📚 ${preguntas.length} preguntas cargadas desde memoria`, 'success');
         return true;
       }
       
-      // Try to load from hidden element
+      // Try cookies
+      try {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          const [name, value] = cookie.trim().split('=');
+          if (name === 'quizData') {
+            const data = JSON.parse(decodeURIComponent(value));
+            if (data.preguntas && data.preguntas.length > 0) {
+              preguntas = data.preguntas;
+              window.quizData = data;
+              mostrarTemasUnicos();
+              updateStorageIndicator();
+              showNotification(`📚 ${preguntas.length} preguntas cargadas desde cookies`, 'success');
+              return true;
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Cookie loading failed:', e);
+      }
+      
+      // Try hidden element
       const dataElement = document.getElementById('hiddenData');
       if (dataElement && dataElement.textContent) {
         try {
@@ -278,55 +341,208 @@
             preguntas = data.preguntas;
             window.quizData = data;
             mostrarTemasUnicos();
-            const fechaGuardado = new Date(data.timestamp).toLocaleString();
-            showNotification(`📚 Preguntas cargadas (guardadas: ${fechaGuardado})`, 'info');
+            updateStorageIndicator();
+            showNotification(`📚 ${preguntas.length} preguntas cargadas desde elemento oculto`, 'success');
             return true;
           }
         } catch (e) {
-          console.log('No previous data found');
+          console.log('Hidden element loading failed:', e);
         }
       }
       
+      showNotification('❌ No se encontraron preguntas guardadas', 'warning');
       return false;
+    }
+
+    function exportarPreguntas() {
+      if (preguntas.length === 0) {
+        showNotification('❌ No hay preguntas para exportar', 'warning');
+        return;
+      }
+      
+      // Create CSV content
+      let csvContent = 'Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta\n';
+      preguntas.forEach(p => {
+        const row = [
+          `"${p.tema}"`,
+          `"${p.pregunta}"`,
+          `"${p.opciones[0]}"`,
+          `"${p.opciones[1]}"`,
+          `"${p.opciones[2]}"`,
+          `"${p.opciones[3]}"`,
+          p.correcta + 1
+        ].join(',');
+        csvContent += row + '\n';
+      });
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `quiz_questions_${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+      
+      showNotification('📤 Preguntas exportadas correctamente', 'success');
     }
 
     function limpiarDatos() {
       preguntas = [];
       preguntasFiltradas = [];
       window.quizData = null;
+      
+      // Clear cookies
+      document.cookie = 'quizData=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+      
+      // Clear hidden element
       const dataElement = document.getElementById('hiddenData');
       if (dataElement) {
         dataElement.textContent = '';
       }
+      
       document.getElementById('temaSelect').innerHTML = '';
       document.getElementById('quiz').classList.add('hidden');
-      showNotification('🗑️ Datos eliminados', 'info');
+      updateStorageIndicator();
+      showNotification('🗑️ Todos los datos han sido eliminados', 'info');
     }
+
+    function updateStorageIndicator() {
+      const indicator = document.getElementById('storageIndicator');
+      const status = document.getElementById('storageStatus');
+      
+      if (preguntas.length > 0) {
+        const temas = [...new Set(preguntas.map(p => p.tema))];
+        status.textContent = `💾 ${preguntas.length} preguntas, ${temas.length} temas guardados`;
+        indicator.classList.add('active');
+      } else {
+        status.textContent = '💾 Sin datos guardados';
+        indicator.classList.remove('active');
+      }
+    }
+
+    // Initialize event listeners
+    document.getElementById('fileInput').addEventListener('change', handleFile);
     document.getElementById('comprobar').addEventListener('click', comprobar);
     document.getElementById('siguiente').addEventListener('click', siguiente);
     document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
 
-    function parseCSVLine(line) {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
+    // Load data on page load
+    window.addEventListener('load', () => {
+      cargarPreguntasGuardadas();
+    });
+
+    document.getElementById("fileInput").addEventListener("change", handleFile);
+
+const preguntasPorTema = {};
+
+function handleFile(event) {
+  const files = event.target.files;
+  for (const file of files) {
+    const tema = file.name.replace(/\.[^/.]+$/, ""); // nombre del archivo sin extensión
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const preguntas = [];
+      const lines = text.trim().split("\n").slice(1); // quitar cabecera
+
+      for (const line of lines) {
+        const campos = line.split(",");
+        if (campos.length < 7) continue; // validación básica
+        const [_, pregunta, ...opciones] = campos;
+        const correcta = parseInt(campos[6]) - 1;
+
+        preguntas.push({
+          pregunta,
+          opciones: opciones.slice(0, 4),
+          correcta
+        });
+      }
+
+      preguntasPorTema[tema] = preguntas;
+      actualizarTemas(); // recarga el <select>
+    };
+
+    reader.readAsText(file);
+  }
+}
+
+function actualizarTemas() {
+  const select = document.getElementById("temaSelect");
+  select.innerHTML = "";
+
+  for (const tema in preguntasPorTema) {
+    const option = document.createElement("option");
+    option.value = tema;
+    option.textContent = tema;
+    select.appendChild(option);
+  }
+
+  document.getElementById("storageStatus").textContent = "✅ Datos cargados";
+}
+
+function parseCSVLine(text) {
+  const result = [];
+  let current = "";
+  let insideQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (char === '"' && (i === 0 || text[i - 1] !== '\\')) {
+      insideQuotes = !insideQuotes;
+    } else if (char === ',' && !insideQuotes) {
+      result.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+
+  return result;
+}
+
+
+    // Improved CSV parsing with better error handling
+    function parseCSVContent(content) {
+      console.log('🔍 INICIANDO ANÁLISIS DEL CSV');
+      console.log('Contenido completo:', content);
+      console.log('Longitud del contenido:', content.length);
       
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim().replace(/^"|"$/g, ''));
-          current = '';
-        } else {
-          current += char;
-        }
+      // Try different line separators
+      let lines = [];
+      if (content.includes('\r\n')) {
+        lines = content.split('\r\n');
+        console.log('📝 Usando separador \\r\\n');
+      } else if (content.includes('\n')) {
+        lines = content.split('\n');
+        console.log('📝 Usando separador \\n');
+      } else if (content.includes('\r')) {
+        lines = content.split('\r');
+        console.log('📝 Usando separador \\r');
+      } else {
+        lines = [content];
+        console.log('📝 Sin separadores de línea encontrados');
       }
       
-      result.push(current.trim().replace(/^"|"$/g, ''));
-      return result;
+      // Filter empty lines
+      lines = lines.filter(line => line.trim().length > 0);
+      console.log('📊 Líneas no vacías encontradas:', lines.length);
+      
+      if (lines.length === 0) {
+        throw new Error('El archivo CSV está vacío o no tiene contenido válido');
+      }
+      
+      // Show first few lines for debugging
+      console.log('🔍 PRIMERAS LÍNEAS:');
+      lines.slice(0, 3).forEach((line, index) => {
+        console.log(`Línea ${index + 1}: "${line}"`);
+      });
+      
+      return lines;
     }
+
+
 
     function handleFile(event) {
       const file = event.target.files[0];
@@ -339,7 +555,6 @@
         try {
           const content = e.target.result;
           console.log('Raw content length:', content.length);
-          console.log('First 300 chars:', content.substring(0, 300));
           
           // Split lines and filter empty ones
           const lines = content.split(/\r?\n/).filter(line => line.trim());
@@ -353,7 +568,6 @@
             if (!line) continue;
             
             console.log(`\n--- Processing line ${i + 1} ---`);
-            console.log('Raw line:', line);
             
             // Skip header row
             if (!skippedHeader && (line.toLowerCase().includes('tema') || line.toLowerCase().includes('pregunta'))) {
@@ -366,14 +580,13 @@
             // Parse the CSV line
             const parts = parseCSVLine(line);
             console.log('Parsed parts:', parts);
-            console.log('Parts count:', parts.length);
             
             if (parts.length < 7) {
               console.log(`❌ Line ${i + 1}: Not enough columns (${parts.length}/7)`);
               continue;
             }
             
-            // Extract data
+            // Extract and validate data
             const tema = parts[0].trim();
             const preguntaText = parts[1].trim();
             const opciones = [
@@ -383,12 +596,6 @@
               parts[5].trim()
             ];
             const correctaStr = parts[6].trim();
-            
-            console.log('Extracted data:');
-            console.log('- Tema:', tema);
-            console.log('- Pregunta:', preguntaText.substring(0, 50) + '...');
-            console.log('- Opciones:', opciones);
-            console.log('- Respuesta correcta:', correctaStr);
             
             // Validate data
             if (!tema || !preguntaText) {
@@ -424,20 +631,15 @@
           
           if (preguntas.length === 0) {
             showNotification('❌ No se encontraron preguntas válidas. Revisa el formato del CSV.', 'error');
-            console.log('Expected format: Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,NumeroRespuestaCorrecta');
             return;
           }
-          
-          // Show unique themes
-          const temas = [...new Set(preguntas.map(p => p.tema))];
-          console.log('Unique themes found:', temas);
           
           // Save and update UI
           guardarPreguntas();
           mostrarTemasUnicos();
           document.getElementById('quiz').classList.add('hidden');
           
-          showNotification(`✅ ${preguntas.length} preguntas cargadas correctamente`, 'success');
+          showNotification(`✅ ${preguntas.length} preguntas cargadas y guardadas correctamente`, 'success');
           
         } catch (error) {
           console.error('Error processing file:', error);
@@ -462,9 +664,13 @@
 
     function aplicarFiltroTemas() {
       const seleccionados = Array.from(document.getElementById('temaSelect').selectedOptions).map(o => o.value);
+      if (seleccionados.length === 0) {
+        showNotification('⚠️ Selecciona al menos un tema', 'warning');
+        return;
+      }
       preguntasFiltradas = preguntas.filter(p => seleccionados.includes(p.tema));
       if (preguntasFiltradas.length === 0) {
-        showNotification('⚠️ Selecciona al menos un tema con preguntas', 'warning');
+        showNotification('⚠️ No hay preguntas para los temas seleccionados', 'warning');
         return;
       }
       iniciarQuiz();
@@ -587,6 +793,7 @@
         setTimeout(() => notification.remove(), 300);
       }, 5000);
     }
+
   </script>
 </body>
 </html>
