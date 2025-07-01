@@ -114,27 +114,43 @@
       border: 1px solid rgba(34, 197, 94, 0.3);
     }
     
+    /* Responsive styles */
     @media (max-width: 640px) {
       .container-mobile {
-        padding: 1rem;
+        padding: 1rem 1rem 2rem 1rem;
+        max-width: 100%;
       }
       
       .text-responsive {
-        font-size: 1.5rem;
+        font-size: 1.75rem;
       }
       
       .btn-mobile {
         width: 100%;
         margin: 0.5rem 0;
       }
+      
+      #temaSelect {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      
+      #quiz .flex.flex-col.md\\:flex-row {
+        flex-direction: column !important;
+      }
+      
+      #quiz .flex.flex-col.md\\:flex-row > button {
+        width: 100%;
+        margin-bottom: 0.75rem;
+      }
     }
   </style>
 </head>
 <body class="gradient-bg min-h-screen">
-  <div class="container mx-auto px-4 py-8 container-mobile">
+  <div class="container mx-auto px-4 py-8 container-mobile max-w-full sm:max-w-xl md:max-w-4xl">
     <!-- Header -->
     <div class="text-center mb-8 fade-in">
-      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2 text-responsive">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 text-responsive">
         🧠 Quiz App
       </h1>
       <p class="text-white opacity-90 text-lg">Pon a prueba tus conocimientos</p>
@@ -174,9 +190,9 @@
         <!-- CSV Format Example -->
         <div class="mt-4 p-4 bg-gray-50 rounded-lg">
           <h4 class="font-semibold text-gray-700 mb-2">📝 Formato CSV esperado:</h4>
-          <code class="text-sm text-gray-600">
-            Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta<br>
-            Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
+          <code class="text-sm text-gray-600 block whitespace-pre-line">
+Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta
+Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           </code>
         </div>
       </div>
@@ -192,7 +208,8 @@
           <h2 class="text-2xl font-semibold text-gray-800">Seleccionar Temas</h2>
         </div>
         
-        <select id="temaSelect" multiple class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors h-40 mb-4">
+        <select id="temaSelect" multiple
+          class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors max-h-40 sm:max-h-56 overflow-y-auto mb-4">
         </select>
         
         <button id="filtrarTemas" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
@@ -244,21 +261,26 @@
 
         <!-- Statistics Card -->
         <div class="stats-card rounded-2xl card-shadow p-6 md:p-8 fade-in">
-          <div class="flex items-center justify-between text-white">
-            <div>
-              <h3 class="text-lg font-semibold mb-2">📊 Estadísticas</h3>
-              <div id="estadisticas" class="text-2xl font-bold"></div>
-            </div>
-            <div class="bg-white bg-opacity-20 p-4 rounded-full">
-              <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          <div class="flex items-center">
+            <div class="flex-shrink-0 bg-white rounded-full p-3 mr-4">
+              <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h13M9 6H5a2 2 0 00-2 2v11a2 2 0 002 2h4"></path>
               </svg>
             </div>
+            <h4 class="text-white font-semibold text-lg">Estadísticas</h4>
           </div>
+          <ul class="mt-4 text-white text-base space-y-2">
+            <li>Preguntas contestadas: <span id="preguntasContestadas">0</span></li>
+            <li>Respuestas correctas: <span id="respuestasCorrectas">0</span></li>
+            <li>Porcentaje de aciertos: <span id="porcentajeAciertos">0%</span></li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
+
+  
+
 
   
   <script>
