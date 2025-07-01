@@ -262,6 +262,9 @@
 
   
   <script>
+    let siguienteTimeout = null; // Variable global para almacenar el timeout
+    let yaComprobada = false;    // Bandera para evitar doble conteo
+
     let preguntas = [],
         preguntasFiltradas = [],
         preguntaActual = 0,
@@ -607,7 +610,15 @@
           <input type="radio" name="opcion" value="${i}" class="mr-4 w-5 h-5 text-blue-600">
           <span class="text-lg">${op}</span>
         </label>`).join('');
+      
+      // Resetear estado de los botones para nueva pregunta
+      document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = false);
+
+      console.log("DEBUG => typeof aciertos:", typeof aciertos, "valor:", aciertos);
+      console.log("DEBUG => typeof totalRespondidas:", typeof totalRespondidas, "valor:", totalRespondidas);
+
       actualizarEstadisticas();
+      console.log('Mostrando pregunta', preguntaActual + 1, 'de', preguntasFiltradas.length);
       
       // Add fade-in animation to options
       setTimeout(() => {
@@ -624,42 +635,76 @@
         showNotification('⚠️ Selecciona una opción', 'warning');
         return;
       }
+      
+      // Incrementar contador de respuestas
       totalRespondidas++;
+      console.log('Total respondidas:', totalRespondidas);
+      
       const valor = parseInt(seleccionada.value);
       const correcta = preguntasFiltradas[preguntaActual].correcta;
+      console.log('Valor seleccionado:', valor, 'Correcta:', correcta);
 
       if (valor === correcta) {
         aciertos++;
+        console.log('¡Correcto! Aciertos:', aciertos);
         seleccionada.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
         seleccionada.parentElement.classList.remove('bg-gray-50');
         showNotification('🎉 ¡Correcto!', 'success');
       } else {
+        console.log('Incorrecto. Aciertos:', aciertos);
         seleccionada.parentElement.classList.add('bg-red-100', 'border-2', 'border-red-500');
         seleccionada.parentElement.classList.remove('bg-gray-50');
         const correctOption = document.querySelector(`input[value='${correcta}']`);
-        correctOption.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
-        correctOption.parentElement.classList.remove('bg-gray-50');
+        if (correctOption) {
+          correctOption.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
+          correctOption.parentElement.classList.remove('bg-gray-50');
+        }
         showNotification('❌ Incorrecto', 'error');
       }
+      
+      // Deshabilitar todas las opciones
       document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = true);
+      
+      // Actualizar estadísticas
       actualizarEstadisticas();
+      console.log('Estadísticas actualizadas - Aciertos:', aciertos, 'Total:', totalRespondidas);
     }
 
-    function siguiente() {
-      preguntaActual++;
-      if (preguntaActual >= preguntasFiltradas.length) {
-        const percentage = (aciertos / totalRespondidas * 100).toFixed(1);
-        showNotification(`🏆 Quiz finalizado!\n✅ Aciertos: ${aciertos}/${totalRespondidas} (${percentage}%)`, 'success');
-        document.getElementById('quiz').classList.add('hidden');
-        return;
-      }
+  function siguiente() {
+  const seleccionada = document.querySelector('input[name="opcion"]:checked');
+  if (!seleccionada) {
+    showNotification('⚠️ Selecciona una opción antes de continuar', 'warning');
+    return;
+  }
+
+  // Comprobar automáticamente
+  comprobar();
+
+  // Deshabilitar botón para evitar doble clic
+  document.getElementById("siguiente").disabled = true;
+
+  // Esperar 5 segundos y luego pasar a la siguiente pregunta
+  setTimeout(() => {
+    preguntaActual++;
+    if (preguntaActual < preguntasFiltradas.length) {
       mostrarPregunta();
+      document.getElementById("siguiente").disabled = false;
+    } else {
+      showNotification('🎉 Quiz completado', 'success');
+      document.getElementById("quiz").classList.add("hidden");
     }
+  }, 5000);
+}
+
 
     function actualizarEstadisticas() {
       const percent = totalRespondidas > 0 ? (aciertos / totalRespondidas * 100).toFixed(1) : 0;
+      console.log('Actualizando estadísticas:', { aciertos, totalRespondidas, percent });
+      
       document.getElementById('estadisticas').innerHTML = `
         <div class="flex items-center space-x-4">
+          <span>Pregunta: ${preguntaActual + 1}/${preguntasFiltradas.length}</span>
+          <span class="text-2xl">•</span>
           <span>Aciertos: ${aciertos}/${totalRespondidas}</span>
           <span class="text-2xl">•</span>
           <span>${percent}%</span>
@@ -718,6 +763,5 @@
     });
 
   </script>
-
 </body>
 </html>
