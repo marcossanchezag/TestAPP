@@ -260,6 +260,7 @@
     </div>
   </div>
 
+  
   <script>
     let preguntas = [],
         preguntasFiltradas = [],
@@ -350,7 +351,6 @@
         }
       }
       
-      showNotification('❌ No se encontraron preguntas guardadas', 'warning');
       return false;
     }
 
@@ -419,247 +419,159 @@
       }
     }
 
-    // Initialize event listeners
-    document.getElementById('fileInput').addEventListener('change', handleFile);
-    document.getElementById('comprobar').addEventListener('click', comprobar);
-    document.getElementById('siguiente').addEventListener('click', siguiente);
-    document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
+    function parseCSVLine(text) {
+      const result = [];
+      let current = "";
+      let insideQuotes = false;
 
-    // Load data on page load
-    window.addEventListener('load', () => {
-      cargarPreguntasGuardadas();
-    });
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
 
-    document.getElementById("fileInput").addEventListener("change", handleFile);
-
-const preguntasPorTema = {};
-
-function handleFile(event) {
-  const files = event.target.files;
-  for (const file of files) {
-    const tema = file.name.replace(/\.[^/.]+$/, ""); // nombre del archivo sin extensión
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      const text = e.target.result;
-      const preguntas = [];
-      const lines = text.trim().split("\n").slice(1); // quitar cabecera
-
-      for (const line of lines) {
-        const campos = line.split(",");
-        if (campos.length < 7) continue; // validación básica
-        const [_, pregunta, ...opciones] = campos;
-        const correcta = parseInt(campos[6]) - 1;
-
-        preguntas.push({
-          pregunta,
-          opciones: opciones.slice(0, 4),
-          correcta
-        });
+        if (char === '"' && (i === 0 || text[i - 1] !== '\\')) {
+          insideQuotes = !insideQuotes;
+        } else if (char === ',' && !insideQuotes) {
+          result.push(current.trim().replace(/^"|"$/g, '')); // Remove surrounding quotes
+          current = "";
+        } else {
+          current += char;
+        }
       }
+      result.push(current.trim().replace(/^"|"$/g, '')); // Remove surrounding quotes
 
-      preguntasPorTema[tema] = preguntas;
-      actualizarTemas(); // recarga el <select>
-    };
-
-    reader.readAsText(file);
-  }
-}
-
-function actualizarTemas() {
-  const select = document.getElementById("temaSelect");
-  select.innerHTML = "";
-
-  for (const tema in preguntasPorTema) {
-    const option = document.createElement("option");
-    option.value = tema;
-    option.textContent = tema;
-    select.appendChild(option);
-  }
-
-  document.getElementById("storageStatus").textContent = "✅ Datos cargados";
-}
-
-function parseCSVLine(text) {
-  const result = [];
-  let current = "";
-  let insideQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-
-    if (char === '"' && (i === 0 || text[i - 1] !== '\\')) {
-      insideQuotes = !insideQuotes;
-    } else if (char === ',' && !insideQuotes) {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += char;
+      return result;
     }
-  }
-  result.push(current.trim());
-
-  return result;
-}
-
-
-    // Improved CSV parsing with better error handling
-    function parseCSVContent(content) {
-      console.log('🔍 INICIANDO ANÁLISIS DEL CSV');
-      console.log('Contenido completo:', content);
-      console.log('Longitud del contenido:', content.length);
-      
-      // Try different line separators
-      let lines = [];
-      if (content.includes('\r\n')) {
-        lines = content.split('\r\n');
-        console.log('📝 Usando separador \\r\\n');
-      } else if (content.includes('\n')) {
-        lines = content.split('\n');
-        console.log('📝 Usando separador \\n');
-      } else if (content.includes('\r')) {
-        lines = content.split('\r');
-        console.log('📝 Usando separador \\r');
-      } else {
-        lines = [content];
-        console.log('📝 Sin separadores de línea encontrados');
-      }
-      
-      // Filter empty lines
-      lines = lines.filter(line => line.trim().length > 0);
-      console.log('📊 Líneas no vacías encontradas:', lines.length);
-      
-      if (lines.length === 0) {
-        throw new Error('El archivo CSV está vacío o no tiene contenido válido');
-      }
-      
-      // Show first few lines for debugging
-      console.log('🔍 PRIMERAS LÍNEAS:');
-      lines.slice(0, 3).forEach((line, index) => {
-        console.log(`Línea ${index + 1}: "${line}"`);
-      });
-      
-      return lines;
-    }
-
-
 
     function handleFile(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+      const files = Array.from(event.target.files);
+      if (files.length === 0) return;
       
-      console.log('Loading file:', file.name);
+      console.log('Processing', files.length, 'files');
       
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          const content = e.target.result;
-          console.log('Raw content length:', content.length);
-          
-          // Split lines and filter empty ones
-          const lines = content.split(/\r?\n/).filter(line => line.trim());
-          console.log('Total non-empty lines:', lines.length);
-          
-          preguntas = [];
-          let skippedHeader = false;
-          
-          for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
+      let processedFiles = 0;
+      let totalNewQuestions = 0;
+      
+      files.forEach(file => {
+        const reader = new FileReader();
+        const tema = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension for theme name
+        
+        reader.onload = e => {
+          try {
+            const content = e.target.result;
+            console.log(`Processing file: ${file.name} as tema: ${tema}`);
             
-            console.log(`\n--- Processing line ${i + 1} ---`);
+            // Split lines and filter empty ones
+            const lines = content.split(/\r?\n/).filter(line => line.trim());
+            console.log(`Lines found in ${file.name}:`, lines.length);
             
-            // Skip header row
-            if (!skippedHeader && (line.toLowerCase().includes('tema') || line.toLowerCase().includes('pregunta'))) {
-              console.log('Skipping header row');
+            let newQuestions = 0;
+            let skippedHeader = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i].trim();
+              if (!line) continue;
+              
+              // Skip header row
+              if (!skippedHeader && (
+                line.toLowerCase().includes('tema') || 
+                line.toLowerCase().includes('pregunta') ||
+                line.toLowerCase().includes('question')
+              )) {
+                console.log(`Skipping header in ${file.name}`);
+                skippedHeader = true;
+                continue;
+              }
               skippedHeader = true;
-              continue;
+              
+              // Parse the CSV line
+              const parts = parseCSVLine(line);
+              
+              // Handle different CSV formats
+              let preguntaText, opciones, correctaStr;
+              
+              if (parts.length >= 7) {
+                // Format: tema,pregunta,opcion1,opcion2,opcion3,opcion4,correcta
+                preguntaText = parts[1].trim();
+                opciones = [parts[2], parts[3], parts[4], parts[5]].map(op => op.trim());
+                correctaStr = parts[6].trim();
+              } else if (parts.length >= 6) {
+                // Format: pregunta,opcion1,opcion2,opcion3,opcion4,correcta (no tema column)
+                preguntaText = parts[0].trim();
+                opciones = [parts[1], parts[2], parts[3], parts[4]].map(op => op.trim());
+                correctaStr = parts[5].trim();
+              } else {
+                console.log(`Line ${i + 1} in ${file.name}: Not enough columns (${parts.length})`);
+                continue;
+              }
+              
+              // Validate data
+              if (!preguntaText) {
+                console.log(`Line ${i + 1} in ${file.name}: Missing pregunta`);
+                continue;
+              }
+              
+              if (opciones.some(op => !op)) {
+                console.log(`Line ${i + 1} in ${file.name}: Some options are empty`);
+                continue;
+              }
+              
+              const correctaNum = parseInt(correctaStr);
+              if (isNaN(correctaNum) || correctaNum < 1 || correctaNum > 4) {
+                console.log(`Line ${i + 1} in ${file.name}: Invalid answer number: ${correctaStr}`);
+                continue;
+              }
+              
+              // Create question object with tema from filename
+              const preguntaObj = {
+                tema: tema,
+                pregunta: preguntaText,
+                opciones: opciones,
+                correcta: correctaNum - 1 // Convert to 0-based index
+              };
+              
+              preguntas.push(preguntaObj);
+              newQuestions++;
             }
-            skippedHeader = true;
             
-            // Parse the CSV line
-            const parts = parseCSVLine(line);
-            console.log('Parsed parts:', parts);
+            console.log(`Added ${newQuestions} questions from ${file.name}`);
+            totalNewQuestions += newQuestions;
+            processedFiles++;
             
-            if (parts.length < 7) {
-              console.log(`❌ Line ${i + 1}: Not enough columns (${parts.length}/7)`);
-              continue;
+            // When all files are processed
+            if (processedFiles === files.length) {
+              console.log(`Total new questions added: ${totalNewQuestions}`);
+              
+              if (totalNewQuestions === 0) {
+                showNotification('❌ No se encontraron preguntas válidas en los archivos. Revisa el formato del CSV.', 'error');
+                return;
+              }
+              
+              // Save and update UI
+              guardarPreguntas();
+              mostrarTemasUnicos();
+              document.getElementById('quiz').classList.add('hidden');
+              
+              showNotification(`✅ ${totalNewQuestions} preguntas cargadas desde ${processedFiles} archivos`, 'success');
             }
             
-            // Extract and validate data
-            const tema = parts[0].trim();
-            const preguntaText = parts[1].trim();
-            const opciones = [
-              parts[2].trim(),
-              parts[3].trim(), 
-              parts[4].trim(),
-              parts[5].trim()
-            ];
-            const correctaStr = parts[6].trim();
-            
-            // Validate data
-            if (!tema || !preguntaText) {
-              console.log(`❌ Line ${i + 1}: Missing tema or pregunta`);
-              continue;
+          } catch (error) {
+            console.error(`Error processing file ${file.name}:`, error);
+            processedFiles++;
+            if (processedFiles === files.length) {
+              showNotification('❌ Error al procesar algunos archivos', 'error');
             }
-            
-            if (opciones.some(op => !op)) {
-              console.log(`❌ Line ${i + 1}: Some options are empty`);
-              continue;
-            }
-            
-            const correctaNum = parseInt(correctaStr);
-            if (isNaN(correctaNum) || correctaNum < 1 || correctaNum > 4) {
-              console.log(`❌ Line ${i + 1}: Invalid answer number: ${correctaStr}`);
-              continue;
-            }
-            
-            // Create question object
-            const preguntaObj = {
-              tema: tema,
-              pregunta: preguntaText,
-              opciones: opciones,
-              correcta: correctaNum - 1 // Convert to 0-based index
-            };
-            
-            preguntas.push(preguntaObj);
-            console.log(`✅ Question ${preguntas.length} added successfully`);
           }
-          
-          console.log('\n=== FINAL RESULTS ===');
-          console.log('Total questions loaded:', preguntas.length);
-          
-          if (preguntas.length === 0) {
-            showNotification('❌ No se encontraron preguntas válidas. Revisa el formato del CSV.', 'error');
-            return;
-          }
-          
-          // Save and update UI
-          guardarPreguntas();
-          mostrarTemasUnicos();
-          document.getElementById('quiz').classList.add('hidden');
-          
-          showNotification(`✅ ${preguntas.length} preguntas cargadas y guardadas correctamente`, 'success');
-          
-        } catch (error) {
-          console.error('Error processing file:', error);
-          showNotification('❌ Error al procesar el archivo: ' + error.message, 'error');
-        }
-      };
-      
-      reader.readAsText(file, 'UTF-8');
+        };
+        
+        reader.readAsText(file, 'UTF-8');
+      });
     }
 
     function mostrarTemasUnicos() {
-      const temas = [...new Set(preguntas.map(p => p.tema))];
+      const temas = [...new Set(preguntas.map(p => p.tema))].sort();
       const select = document.getElementById('temaSelect');
       select.innerHTML = temas.map(t => `<option value="${t}" class="p-2">${t}</option>`).join('');
       
-      // Update status
-      const statusElement = document.getElementById('datosStatus');
-      if (statusElement) {
-        statusElement.textContent = `${preguntas.length} preguntas, ${temas.length} temas`;
-      }
+      console.log('Temas únicos encontrados:', temas);
     }
 
     function aplicarFiltroTemas() {
@@ -794,6 +706,18 @@ function parseCSVLine(text) {
       }, 5000);
     }
 
+    // Initialize event listeners
+    document.getElementById('fileInput').addEventListener('change', handleFile);
+    document.getElementById('comprobar').addEventListener('click', comprobar);
+    document.getElementById('siguiente').addEventListener('click', siguiente);
+    document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
+
+    // Load data on page load
+    window.addEventListener('load', () => {
+      cargarPreguntasGuardadas();
+    });
+
   </script>
+
 </body>
 </html>
