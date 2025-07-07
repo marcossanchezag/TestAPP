@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,98 +8,102 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
+
     body {
       font-family: 'Inter', sans-serif;
     }
-    
+
     .gradient-bg {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-    
+
     .glass-effect {
       backdrop-filter: blur(10px);
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
     }
-    
+
     .card-shadow {
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
-    
+
     .btn-primary {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       transition: all 0.3s ease;
     }
-    
+
     .btn-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
     }
-    
+
     .btn-success {
       background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
       transition: all 0.3s ease;
     }
-    
+
     .btn-success:hover {
       transform: translateY(-2px);
       box-shadow: 0 10px 20px rgba(72, 187, 120, 0.4);
     }
-    
+
     .option-card {
       transition: all 0.3s ease;
       cursor: pointer;
     }
-    
+
     .option-card:hover {
       transform: translateX(4px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-    
+
     .pulse-animation {
       animation: pulse 2s infinite;
     }
-    
+
     @keyframes pulse {
-      0%, 100% {
+
+      0%,
+      100% {
         opacity: 1;
       }
+
       50% {
         opacity: 0.8;
       }
     }
-    
+
     .fade-in {
       animation: fadeIn 0.5s ease-in;
     }
-    
+
     @keyframes fadeIn {
       from {
         opacity: 0;
         transform: translateY(20px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
       }
     }
-    
+
     .file-input {
       position: relative;
       overflow: hidden;
       display: inline-block;
     }
-    
+
     .file-input input[type=file] {
       position: absolute;
       left: -9999px;
     }
-    
+
     .stats-card {
       background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     }
-    
+
     .storage-indicator {
       display: inline-flex;
       align-items: center;
@@ -108,47 +113,47 @@
       color: white;
       font-size: 0.875rem;
     }
-    
+
     .storage-indicator.active {
       background: rgba(34, 197, 94, 0.2);
       border: 1px solid rgba(34, 197, 94, 0.3);
     }
-    
+
     /* Responsive styles */
     @media (max-width: 640px) {
       .container-mobile {
         padding: 1rem 1rem 2rem 1rem;
         max-width: 100%;
       }
-      
+
       .text-responsive {
         font-size: 1.75rem;
       }
-      
+
       .btn-mobile {
         width: 100%;
         margin: 0.5rem 0;
       }
-      
+
       #temaSelect {
         max-height: 200px;
         overflow-y: auto;
       }
-      
+
       #quiz .flex.flex-col.md\\:flex-row {
         flex-direction: column !important;
       }
-      
-      #quiz .flex.flex-col.md\\:flex-row > button {
+
+      #quiz .flex.flex-col.md\\:flex-row>button {
         width: 100%;
         margin-bottom: 0.75rem;
       }
     }
   </style>
 </head>
+
 <body class="gradient-bg min-h-screen">
   <div class="container mx-auto px-4 py-8 container-mobile max-w-full sm:max-w-xl md:max-w-4xl">
-    <!-- Header -->
     <div class="text-center mb-8 fade-in">
       <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 text-responsive">
         🧠 Quiz App
@@ -159,24 +164,25 @@
       </div>
     </div>
 
-    <!-- Main Content -->
     <div class="max-w-4xl mx-auto">
-      <!-- File Upload Section -->
       <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
         <div class="flex items-center mb-4">
           <div class="bg-blue-100 p-3 rounded-full mr-4">
             <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
           </div>
           <h2 class="text-2xl font-semibold text-gray-800">Cargar Preguntas</h2>
         </div>
-        
+
         <div class="file-input w-full">
-          <label for="fileInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+          <label for="fileInput"
+            class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
             <div class="flex flex-col items-center justify-center pt-5 pb-6">
               <svg class="w-8 h-8 mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
               </svg>
               <p class="mb-2 text-sm text-gray-500">
                 <span class="font-semibold">Click para cargar</span> o arrastra tu archivo CSV
@@ -186,8 +192,7 @@
           </label>
           <input type="file" id="fileInput" accept=".csv" />
         </div>
-        
-        <!-- CSV Format Example -->
+
         <div class="mt-4 p-4 bg-gray-50 rounded-lg">
           <h4 class="font-semibold text-gray-700 mb-2">📝 Formato CSV esperado:</h4>
           <code class="text-sm text-gray-600 block whitespace-pre-line">
@@ -197,48 +202,52 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         </div>
       </div>
 
-      <!-- Theme Selection -->
       <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
         <div class="flex items-center mb-4">
           <div class="bg-purple-100 p-3 rounded-full mr-4">
             <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+              </path>
             </svg>
           </div>
           <h2 class="text-2xl font-semibold text-gray-800">Seleccionar Temas</h2>
         </div>
-        
+
         <select id="temaSelect" multiple
           class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors max-h-40 sm:max-h-56 overflow-y-auto mb-4">
         </select>
-        
-        <button id="filtrarTemas" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
+
+        <button id="filtrarTemas"
+          class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
           🚀 Comenzar Quiz
         </button>
-        
-        <!-- Data management buttons -->
+
         <div class="flex flex-col md:flex-row gap-2 mt-4">
-          <button onclick="cargarPreguntasGuardadas()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          <button onclick="cargarPreguntasGuardadas()"
+            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
             📚 Cargar Guardadas
           </button>
-          <button onclick="exportarPreguntas()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          <button onclick="exportarPreguntas()"
+            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
             📤 Exportar CSV
           </button>
-          <button onclick="limpiarDatos()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          <button onclick="limpiarDatos()"
+            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
             🗑️ Limpiar Datos
           </button>
           <span id="datosStatus" class="text-sm text-gray-600 flex items-center px-2"></span>
         </div>
       </div>
 
-      <!-- Quiz Section -->
       <div id="quiz" class="hidden">
-        <!-- Question Card -->
         <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
           <div class="flex items-start mb-6">
             <div class="bg-green-100 p-3 rounded-full mr-4 flex-shrink-0">
               <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                </path>
               </svg>
             </div>
             <div class="flex-1">
@@ -246,25 +255,23 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
               <div id="pregunta" class="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed"></div>
             </div>
           </div>
-          
+
           <div id="opciones" class="space-y-3"></div>
-          
+
           <div class="flex flex-col md:flex-row gap-4 mt-8">
-            <button id="comprobar" class="btn-success text-white px-8 py-3 rounded-xl font-semibold btn-mobile">
-              ✓ Comprobar Respuesta
-            </button>
-            <button id="siguiente" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold btn-mobile">
+            <button id="siguiente" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold btn-mobile"
+              disabled>
               → Siguiente Pregunta
             </button>
           </div>
         </div>
 
-        <!-- Statistics Card -->
         <div class="stats-card rounded-2xl card-shadow p-6 md:p-8 fade-in">
           <div class="flex items-center">
             <div class="flex-shrink-0 bg-white rounded-full p-3 mr-4">
               <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6h13M9 6H5a2 2 0 00-2 2v11a2 2 0 002 2h4"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 19V6h13M9 6H5a2 2 0 00-2 2v11a2 2 0 002 2h4"></path>
               </svg>
             </div>
             <h4 class="text-white font-semibold text-lg">Estadísticas</h4>
@@ -279,19 +286,13 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
     </div>
   </div>
 
-  
-
-
-  
   <script>
-    let siguienteTimeout = null; // Variable global para almacenar el timeout
-    let yaComprobada = false;    // Bandera para evitar doble conteo
-
     let preguntas = [],
-        preguntasFiltradas = [],
-        preguntaActual = 0,
-        aciertos = 0,
-        totalRespondidas = 0;
+      preguntasFiltradas = [],
+      preguntaActual = 0,
+      aciertos = 0,
+      totalRespondidas = 0;
+    let quizActivo = false; // Nueva bandera para controlar el estado del quiz
 
     // Improved storage system using cookies as fallback
     function guardarPreguntas() {
@@ -299,84 +300,92 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         preguntas: preguntas,
         timestamp: Date.now()
       };
-      
-      // Primary storage: window object
-      window.quizData = preguntasData;
-      
-      // Secondary storage: cookies (with size limit)
+
       try {
-        const dataStr = JSON.stringify(preguntasData);
-        if (dataStr.length < 4000) { // Cookie size limit
-          document.cookie = `quizData=${encodeURIComponent(dataStr)}; path=/; expires=${new Date(Date.now() + 30*24*60*60*1000).toUTCString()}`;
-        }
+        // 1. Intentar con localStorage (preferido)
+        localStorage.setItem('quizData', JSON.stringify(preguntasData));
+        console.log('Datos guardados en localStorage.');
       } catch (e) {
-        console.log('Cookie storage failed:', e);
+        console.error('Error al guardar en localStorage:', e);
+        // Si localStorage falla o no está disponible, intentar con cookies (como fallback secundario)
+        try {
+          const dataStr = JSON.stringify(preguntasData);
+          if (dataStr.length < 4000) { // Límite de tamaño de cookie
+            document.cookie = `quizData=${encodeURIComponent(dataStr)}; path=/; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`;
+            console.log('Datos guardados en cookies.');
+          } else {
+            console.warn('Los datos son demasiado grandes para guardar en cookies.');
+          }
+        } catch (e) {
+          console.error('Error al guardar en cookies:', e);
+        }
       }
-      
-      // Tertiary storage: hidden element
-      let dataElement = document.getElementById('hiddenData');
-      if (!dataElement) {
-        dataElement = document.createElement('div');
-        dataElement.id = 'hiddenData';
-        dataElement.style.display = 'none';
-        document.body.appendChild(dataElement);
-      }
-      dataElement.textContent = JSON.stringify(preguntasData);
-      
+
+      // Mantener window.quizData para uso en la misma sesión sin recargar
+      window.quizData = preguntasData;
+
       updateStorageIndicator();
       showNotification('💾 Preguntas guardadas correctamente', 'success');
     }
 
     function cargarPreguntasGuardadas() {
-      // Try window object first
-      if (window.quizData && window.quizData.preguntas && window.quizData.preguntas.length > 0) {
-        preguntas = window.quizData.preguntas;
-        mostrarTemasUnicos();
-        updateStorageIndicator();
-        showNotification(`📚 ${preguntas.length} preguntas cargadas desde memoria`, 'success');
-        return true;
-      }
-      
-      // Try cookies
+      let loaded = false;
+      let dataSource = 'memoria'; // Para el mensaje de notificación
+
+      // 1. Intentar cargar desde localStorage (preferido)
       try {
-        const cookies = document.cookie.split(';');
-        for (let cookie of cookies) {
-          const [name, value] = cookie.trim().split('=');
-          if (name === 'quizData') {
-            const data = JSON.parse(decodeURIComponent(value));
-            if (data.preguntas && data.preguntas.length > 0) {
-              preguntas = data.preguntas;
-              window.quizData = data;
-              mostrarTemasUnicos();
-              updateStorageIndicator();
-              showNotification(`📚 ${preguntas.length} preguntas cargadas desde cookies`, 'success');
-              return true;
-            }
+        const storedData = localStorage.getItem('quizData');
+        if (storedData) {
+          const data = JSON.parse(storedData);
+          if (data && data.preguntas && data.preguntas.length > 0) {
+            preguntas = data.preguntas;
+            window.quizData = data; // También actualizar la caché en memoria
+            loaded = true;
+            dataSource = 'localStorage';
           }
         }
       } catch (e) {
-        console.log('Cookie loading failed:', e);
+        console.error('Error al cargar desde localStorage:', e);
       }
-      
-      // Try hidden element
-      const dataElement = document.getElementById('hiddenData');
-      if (dataElement && dataElement.textContent) {
+
+      // 2. Si no se cargó de localStorage, intentar cargar desde cookies
+      if (!loaded) {
         try {
-          const data = JSON.parse(dataElement.textContent);
-          if (data.preguntas && data.preguntas.length > 0) {
-            preguntas = data.preguntas;
-            window.quizData = data;
-            mostrarTemasUnicos();
-            updateStorageIndicator();
-            showNotification(`📚 ${preguntas.length} preguntas cargadas desde elemento oculto`, 'success');
-            return true;
+          const cookies = document.cookie.split(';');
+          for (let cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'quizData') {
+              const data = JSON.parse(decodeURIComponent(value));
+              if (data.preguntas && data.preguntas.length > 0) {
+                preguntas = data.preguntas;
+                window.quizData = data; // También actualizar la caché en memoria
+                loaded = true;
+                dataSource = 'cookies';
+                break; // Salir del bucle de cookies
+              }
+            }
           }
         } catch (e) {
-          console.log('Hidden element loading failed:', e);
+          console.error('Error al cargar desde cookies:', e);
         }
       }
-      
-      return false;
+
+      // 3. Si aún no se cargó, intentar desde window.quizData (solo si no se ha recargado la página)
+      // Este caso solo aplica si el usuario no ha recargado la página y los datos están en memoria de una carga previa
+      if (!loaded && window.quizData && window.quizData.preguntas && window.quizData.preguntas.length > 0) {
+        preguntas = window.quizData.preguntas;
+        loaded = true;
+        dataSource = 'memoria';
+      }
+
+      if (loaded) {
+        mostrarTemasUnicos();
+        updateStorageIndicator();
+        showNotification(`📚 ${preguntas.length} preguntas cargadas desde ${dataSource}`, 'success');
+        return true;
+      }
+
+      return false; // No se pudieron cargar preguntas
     }
 
     function exportarPreguntas() {
@@ -384,7 +393,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         showNotification('❌ No hay preguntas para exportar', 'warning');
         return;
       }
-      
+
       // Create CSV content
       let csvContent = 'Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta\n';
       preguntas.forEach(p => {
@@ -399,31 +408,36 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         ].join(',');
         csvContent += row + '\n';
       });
-      
+
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `quiz_questions_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
-      
+
       showNotification('📤 Preguntas exportadas correctamente', 'success');
     }
 
     function limpiarDatos() {
       preguntas = [];
       preguntasFiltradas = [];
-      window.quizData = null;
-      
-      // Clear cookies
+      window.quizData = null; // Limpiar la caché en memoria
+
+      // Limpiar localStorage
+      localStorage.removeItem('quizData');
+      console.log('localStorage limpiado.');
+
+      // Limpiar cookies
       document.cookie = 'quizData=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      
-      // Clear hidden element
+      console.log('Cookies limpiadas.');
+
+      // El elemento oculto no necesita limpieza persistente ya que es de la sesión actual
       const dataElement = document.getElementById('hiddenData');
       if (dataElement) {
         dataElement.textContent = '';
       }
-      
+
       document.getElementById('temaSelect').innerHTML = '';
       document.getElementById('quiz').classList.add('hidden');
       updateStorageIndicator();
@@ -433,7 +447,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
     function updateStorageIndicator() {
       const indicator = document.getElementById('storageIndicator');
       const status = document.getElementById('storageStatus');
-      
+
       if (preguntas.length > 0) {
         const temas = [...new Set(preguntas.map(p => p.tema))];
         status.textContent = `💾 ${preguntas.length} preguntas, ${temas.length} temas guardados`;
@@ -469,35 +483,35 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
     function handleFile(event) {
       const files = Array.from(event.target.files);
       if (files.length === 0) return;
-      
+
       console.log('Processing', files.length, 'files');
-      
+
       let processedFiles = 0;
       let totalNewQuestions = 0;
-      
+
       files.forEach(file => {
         const reader = new FileReader();
         const tema = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension for theme name
-        
+
         reader.onload = e => {
           try {
             const content = e.target.result;
             console.log(`Processing file: ${file.name} as tema: ${tema}`);
-            
+
             // Split lines and filter empty ones
             const lines = content.split(/\r?\n/).filter(line => line.trim());
             console.log(`Lines found in ${file.name}:`, lines.length);
-            
+
             let newQuestions = 0;
             let skippedHeader = false;
-            
+
             for (let i = 0; i < lines.length; i++) {
               const line = lines[i].trim();
               if (!line) continue;
-              
+
               // Skip header row
               if (!skippedHeader && (
-                line.toLowerCase().includes('tema') || 
+                line.toLowerCase().includes('tema') ||
                 line.toLowerCase().includes('pregunta') ||
                 line.toLowerCase().includes('question')
               )) {
@@ -506,13 +520,13 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 continue;
               }
               skippedHeader = true;
-              
+
               // Parse the CSV line
               const parts = parseCSVLine(line);
-              
+
               // Handle different CSV formats
               let preguntaText, opciones, correctaStr;
-              
+
               if (parts.length >= 7) {
                 // Format: tema,pregunta,opcion1,opcion2,opcion3,opcion4,correcta
                 preguntaText = parts[1].trim();
@@ -527,24 +541,24 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 console.log(`Line ${i + 1} in ${file.name}: Not enough columns (${parts.length})`);
                 continue;
               }
-              
+
               // Validate data
               if (!preguntaText) {
                 console.log(`Line ${i + 1} in ${file.name}: Missing pregunta`);
                 continue;
               }
-              
+
               if (opciones.some(op => !op)) {
                 console.log(`Line ${i + 1} in ${file.name}: Some options are empty`);
                 continue;
               }
-              
+
               const correctaNum = parseInt(correctaStr);
               if (isNaN(correctaNum) || correctaNum < 1 || correctaNum > 4) {
                 console.log(`Line ${i + 1} in ${file.name}: Invalid answer number: ${correctaStr}`);
                 continue;
               }
-              
+
               // Create question object with tema from filename
               const preguntaObj = {
                 tema: tema,
@@ -552,32 +566,32 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 opciones: opciones,
                 correcta: correctaNum - 1 // Convert to 0-based index
               };
-              
+
               preguntas.push(preguntaObj);
               newQuestions++;
             }
-            
+
             console.log(`Added ${newQuestions} questions from ${file.name}`);
             totalNewQuestions += newQuestions;
             processedFiles++;
-            
+
             // When all files are processed
             if (processedFiles === files.length) {
               console.log(`Total new questions added: ${totalNewQuestions}`);
-              
+
               if (totalNewQuestions === 0) {
                 showNotification('❌ No se encontraron preguntas válidas en los archivos. Revisa el formato del CSV.', 'error');
                 return;
               }
-              
+
               // Save and update UI
               guardarPreguntas();
               mostrarTemasUnicos();
               document.getElementById('quiz').classList.add('hidden');
-              
+
               showNotification(`✅ ${totalNewQuestions} preguntas cargadas desde ${processedFiles} archivos`, 'success');
             }
-            
+
           } catch (error) {
             console.error(`Error processing file ${file.name}:`, error);
             processedFiles++;
@@ -586,7 +600,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
             }
           }
         };
-        
+
         reader.readAsText(file, 'UTF-8');
       });
     }
@@ -595,7 +609,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       const temas = [...new Set(preguntas.map(p => p.tema))].sort();
       const select = document.getElementById('temaSelect');
       select.innerHTML = temas.map(t => `<option value="${t}" class="p-2">${t}</option>`).join('');
-      
+
       console.log('Temas únicos encontrados:', temas);
     }
 
@@ -617,31 +631,43 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       preguntaActual = 0;
       aciertos = 0;
       totalRespondidas = 0;
+      quizActivo = true; // El quiz está activo
       preguntasFiltradas = preguntasFiltradas.sort(() => Math.random() - 0.5);
       document.getElementById('quiz').classList.remove('hidden');
       document.getElementById('quiz').scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('siguiente').disabled = true; // Deshabilitar el botón Siguiente al inicio de cada pregunta
       mostrarPregunta();
       showNotification('🎉 ¡Quiz iniciado! ¡Buena suerte!', 'success');
     }
 
     function mostrarPregunta() {
+      if (!quizActivo) return; // Si el quiz no está activo, no muestres preguntas
+
       const p = preguntasFiltradas[preguntaActual];
       document.getElementById('pregunta').textContent = p.pregunta;
-      document.getElementById('opciones').innerHTML = p.opciones.map((op, i) => `
+
+      const opcionesContainer = document.getElementById('opciones');
+      opcionesContainer.innerHTML = p.opciones.map((op, i) => `
         <label class="option-card flex items-center p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-all">
           <input type="radio" name="opcion" value="${i}" class="mr-4 w-5 h-5 text-blue-600">
           <span class="text-lg">${op}</span>
         </label>`).join('');
-      
-      // Resetear estado de los botones para nueva pregunta
-      document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = false);
 
-      console.log("DEBUG => typeof aciertos:", typeof aciertos, "valor:", aciertos);
-      console.log("DEBUG => typeof totalRespondidas:", typeof totalRespondidas, "valor:", totalRespondidas);
+      // Attach event listener to each new radio button
+      document.querySelectorAll('input[name="opcion"]').forEach(radio => {
+        radio.addEventListener('change', handleAnswerSelection);
+      });
+
+      document.getElementById('siguiente').disabled = true; // Deshabilitar el botón "Siguiente" hasta que se responda
+      document.querySelectorAll('input[name="opcion"]').forEach(r => {
+        r.disabled = false; // Asegurarse de que las opciones estén habilitadas para la nueva pregunta
+        r.parentElement.classList.remove('bg-green-100', 'border-2', 'border-green-500', 'bg-red-100', 'border-red-500'); // Limpiar estilos
+        r.parentElement.classList.add('bg-gray-50'); // Restaurar estilo original
+      });
 
       actualizarEstadisticas();
       console.log('Mostrando pregunta', preguntaActual + 1, 'de', preguntasFiltradas.length);
-      
+
       // Add fade-in animation to options
       setTimeout(() => {
         document.querySelectorAll('.option-card').forEach((card, index) => {
@@ -651,94 +677,91 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       }, 100);
     }
 
-    function comprobar() {
-      const seleccionada = document.querySelector('input[name="opcion"]:checked');
-      if (!seleccionada) {
-        showNotification('⚠️ Selecciona una opción', 'warning');
-        return;
-      }
-      
-      // Incrementar contador de respuestas
-      totalRespondidas++;
-      console.log('Total respondidas:', totalRespondidas);
-      
+    function handleAnswerSelection(event) {
+      if (!quizActivo) return;
+
+      const seleccionada = event.target;
       const valor = parseInt(seleccionada.value);
       const correcta = preguntasFiltradas[preguntaActual].correcta;
+
+      // Incrementar contador de respuestas solo si no se ha respondido aún (simple check)
+      // Si quieres evitar que se cuente doble por múltiples clics, podrías usar una bandera `preguntaRespondida`
+      if (!seleccionada.dataset.answered) {
+        totalRespondidas++;
+        seleccionada.dataset.answered = true; // Marca la opción como respondida para esta pregunta
+      }
+
+      console.log('Total respondidas:', totalRespondidas);
       console.log('Valor seleccionado:', valor, 'Correcta:', correcta);
 
+      // Deshabilitar todas las opciones para la pregunta actual después de seleccionar una
+      document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = true);
+
+      // Mostrar feedback visual y actualizar aciertos
       if (valor === correcta) {
         aciertos++;
         console.log('¡Correcto! Aciertos:', aciertos);
         seleccionada.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
-        seleccionada.parentElement.classList.remove('bg-gray-50');
+        seleccionada.parentElement.classList.remove('bg-gray-50', 'hover:bg-gray-100');
         showNotification('🎉 ¡Correcto!', 'success');
       } else {
         console.log('Incorrecto. Aciertos:', aciertos);
         seleccionada.parentElement.classList.add('bg-red-100', 'border-2', 'border-red-500');
-        seleccionada.parentElement.classList.remove('bg-gray-50');
+        seleccionada.parentElement.classList.remove('bg-gray-50', 'hover:bg-gray-100');
         const correctOption = document.querySelector(`input[value='${correcta}']`);
         if (correctOption) {
           correctOption.parentElement.classList.add('bg-green-100', 'border-2', 'border-green-500');
-          correctOption.parentElement.classList.remove('bg-gray-50');
+          correctOption.parentElement.classList.remove('bg-gray-50', 'hover:bg-gray-100');
         }
         showNotification('❌ Incorrecto', 'error');
       }
-      
-      // Deshabilitar todas las opciones
-      document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = true);
-      
+
+      // Habilitar el botón Siguiente
+      document.getElementById('siguiente').disabled = false;
+
       // Actualizar estadísticas
       actualizarEstadisticas();
       console.log('Estadísticas actualizadas - Aciertos:', aciertos, 'Total:', totalRespondidas);
     }
 
-  function siguiente() {
-  const seleccionada = document.querySelector('input[name="opcion"]:checked');
-  if (!seleccionada) {
-    showNotification('⚠️ Selecciona una opción antes de continuar', 'warning');
-    return;
-  }
+    function siguientePregunta() {
+      if (!quizActivo) return;
 
-  // Comprobar automáticamente
-  comprobar();
-
-  // Deshabilitar botón para evitar doble clic
-  document.getElementById("siguiente").disabled = true;
-
-  // Esperar 5 segundos y luego pasar a la siguiente pregunta
-  setTimeout(() => {
-    preguntaActual++;
-    if (preguntaActual < preguntasFiltradas.length) {
-      mostrarPregunta();
-      document.getElementById("siguiente").disabled = false;
-    } else {
-      showNotification('🎉 Quiz completado', 'success');
-      document.getElementById("quiz").classList.add("hidden");
+      preguntaActual++;
+      if (preguntaActual < preguntasFiltradas.length) {
+        // Reiniciar la bandera `answered` para la nueva pregunta
+        document.querySelectorAll('input[name="opcion"]').forEach(radio => {
+          delete radio.dataset.answered;
+        });
+        mostrarPregunta();
+        document.getElementById('siguiente').disabled = true; // Deshabilitar de nuevo
+      } else {
+        quizActivo = false; // El quiz ha terminado
+        showNotification('🎉 Quiz completado', 'success');
+        document.getElementById('quiz').classList.add('hidden');
+        // Opcional: mostrar un resumen final o reiniciar quiz
+      }
     }
-  }, 5000);
-}
 
 
     function actualizarEstadisticas() {
+      const preguntasContestadasSpan = document.getElementById('preguntasContestadas');
+      const respuestasCorrectasSpan = document.getElementById('respuestasCorrectas');
+      const porcentajeAciertosSpan = document.getElementById('porcentajeAciertos');
+
+      preguntasContestadasSpan.textContent = totalRespondidas;
+      respuestasCorrectasSpan.textContent = aciertos;
       const percent = totalRespondidas > 0 ? (aciertos / totalRespondidas * 100).toFixed(1) : 0;
+      porcentajeAciertosSpan.textContent = `${percent}%`;
+
       console.log('Actualizando estadísticas:', { aciertos, totalRespondidas, percent });
-      
-      document.getElementById('estadisticas').innerHTML = `
-        <div class="flex items-center space-x-4">
-          <span>Pregunta: ${preguntaActual + 1}/${preguntasFiltradas.length}</span>
-          <span class="text-2xl">•</span>
-          <span>Aciertos: ${aciertos}/${totalRespondidas}</span>
-          <span class="text-2xl">•</span>
-          <span>${percent}%</span>
-        </div>
-      `;
     }
 
     function showNotification(message, type = 'info') {
       // Create notification element
       const notification = document.createElement('div');
       notification.className = `fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
-      
+
       // Set colors based on type
       const colors = {
         success: 'bg-green-500 text-white',
@@ -746,7 +769,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         warning: 'bg-yellow-500 text-white',
         info: 'bg-blue-500 text-white'
       };
-      
+
       notification.className += ` ${colors[type] || colors.info}`;
       notification.innerHTML = `
         <div class="flex items-center">
@@ -758,14 +781,14 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           </button>
         </div>
       `;
-      
+
       document.body.appendChild(notification);
-      
+
       // Animate in
       setTimeout(() => {
         notification.classList.remove('translate-x-full');
       }, 100);
-      
+
       // Auto remove after 5 seconds
       setTimeout(() => {
         notification.classList.add('translate-x-full');
@@ -775,8 +798,9 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
     // Initialize event listeners
     document.getElementById('fileInput').addEventListener('change', handleFile);
-    document.getElementById('comprobar').addEventListener('click', comprobar);
-    document.getElementById('siguiente').addEventListener('click', siguiente);
+    // Eliminar el listener del botón "Comprobar Respuesta" si ya no lo necesitas
+    // document.getElementById('comprobar').addEventListener('click', comprobar); 
+    document.getElementById('siguiente').addEventListener('click', siguientePregunta); // Cambiado a siguientePregunta
     document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
 
     // Load data on page load
@@ -786,4 +810,5 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
   </script>
 </body>
+
 </html>
