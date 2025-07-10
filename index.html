@@ -293,7 +293,16 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       preguntaActual = 0,
       aciertos = 0,
       totalRespondidas = 0;
-    let quizActivo = false; // Nueva bandera para controlar el estado del quiz
+    let quizActivo = false;
+
+    // Función para verificar si una pregunta ya existe
+    function preguntaExiste(nuevaPregunta) {
+      return preguntas.some(p => 
+        p.tema === nuevaPregunta.tema && 
+        p.pregunta === nuevaPregunta.pregunta &&
+        JSON.stringify(p.opciones) === JSON.stringify(nuevaPregunta.opciones)
+      );
+    }
 
     // Improved storage system using cookies as fallback
     function guardarPreguntas() {
@@ -303,15 +312,13 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       };
 
       try {
-        // 1. Intentar con localStorage (preferido)
         localStorage.setItem('quizData', JSON.stringify(preguntasData));
         console.log('Datos guardados en localStorage.');
       } catch (e) {
         console.error('Error al guardar en localStorage:', e);
-        // Si localStorage falla o no está disponible, intentar con cookies (como fallback secundario)
         try {
           const dataStr = JSON.stringify(preguntasData);
-          if (dataStr.length < 4000) { // Límite de tamaño de cookie
+          if (dataStr.length < 4000) {
             document.cookie = `quizData=${encodeURIComponent(dataStr)}; path=/; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`;
             console.log('Datos guardados en cookies.');
           } else {
@@ -322,25 +329,22 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         }
       }
 
-      // Mantener window.quizData para uso en la misma sesión sin recargar
       window.quizData = preguntasData;
-
       updateStorageIndicator();
       showNotification('💾 Preguntas guardadas correctamente', 'success');
     }
 
     function cargarPreguntasGuardadas() {
       let loaded = false;
-      let dataSource = 'memoria'; // Para el mensaje de notificación
+      let dataSource = 'memoria';
 
-      // 1. Intentar cargar desde localStorage (preferido)
       try {
         const storedData = localStorage.getItem('quizData');
         if (storedData) {
           const data = JSON.parse(storedData);
           if (data && data.preguntas && data.preguntas.length > 0) {
             preguntas = data.preguntas;
-            window.quizData = data; // También actualizar la caché en memoria
+            window.quizData = data;
             loaded = true;
             dataSource = 'localStorage';
           }
@@ -349,7 +353,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         console.error('Error al cargar desde localStorage:', e);
       }
 
-      // 2. Si no se cargó de localStorage, intentar cargar desde cookies
       if (!loaded) {
         try {
           const cookies = document.cookie.split(';');
@@ -359,10 +362,10 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
               const data = JSON.parse(decodeURIComponent(value));
               if (data.preguntas && data.preguntas.length > 0) {
                 preguntas = data.preguntas;
-                window.quizData = data; // También actualizar la caché en memoria
+                window.quizData = data;
                 loaded = true;
                 dataSource = 'cookies';
-                break; // Salir del bucle de cookies
+                break;
               }
             }
           }
@@ -371,8 +374,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         }
       }
 
-      // 3. Si aún no se cargó, intentar desde window.quizData (solo si no se ha recargado la página)
-      // Este caso solo aplica si el usuario no ha recargado la página y los datos están en memoria de una carga previa
       if (!loaded && window.quizData && window.quizData.preguntas && window.quizData.preguntas.length > 0) {
         preguntas = window.quizData.preguntas;
         loaded = true;
@@ -386,7 +387,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         return true;
       }
 
-      return false; // No se pudieron cargar preguntas
+      return false;
     }
 
     function exportarPreguntas() {
@@ -395,7 +396,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         return;
       }
 
-      // Create CSV content
       let csvContent = 'Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta\n';
       preguntas.forEach(p => {
         const row = [
@@ -410,7 +410,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         csvContent += row + '\n';
       });
 
-      // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
@@ -423,17 +422,14 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
     function limpiarDatos() {
       preguntas = [];
       preguntasFiltradas = [];
-      window.quizData = null; // Limpiar la caché en memoria
+      window.quizData = null;
 
-      // Limpiar localStorage
       localStorage.removeItem('quizData');
       console.log('localStorage limpiado.');
 
-      // Limpiar cookies
       document.cookie = 'quizData=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
       console.log('Cookies limpiadas.');
 
-      // El elemento oculto no necesita limpieza persistente ya que es de la sesión actual
       const dataElement = document.getElementById('hiddenData');
       if (dataElement) {
         dataElement.textContent = '';
@@ -470,13 +466,13 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         if (char === '"' && (i === 0 || text[i - 1] !== '\\')) {
           insideQuotes = !insideQuotes;
         } else if (char === ',' && !insideQuotes) {
-          result.push(current.trim().replace(/^"|"$/g, '')); // Remove surrounding quotes
+          result.push(current.trim().replace(/^"|"$/g, ''));
           current = "";
         } else {
           current += char;
         }
       }
-      result.push(current.trim().replace(/^"|"$/g, '')); // Remove surrounding quotes
+      result.push(current.trim().replace(/^"|"$/g, ''));
 
       return result;
     }
@@ -489,17 +485,17 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
       let processedFiles = 0;
       let totalNewQuestions = 0;
+      let duplicatesSkipped = 0;
 
       files.forEach(file => {
         const reader = new FileReader();
-        const tema = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension for theme name
+        const tema = file.name.replace(/\.[^/.]+$/, "");
 
         reader.onload = e => {
           try {
             const content = e.target.result;
             console.log(`Processing file: ${file.name} as tema: ${tema}`);
 
-            // Split lines and filter empty ones
             const lines = content.split(/\r?\n/).filter(line => line.trim());
             console.log(`Lines found in ${file.name}:`, lines.length);
 
@@ -510,7 +506,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
               const line = lines[i].trim();
               if (!line) continue;
 
-              // Skip header row
               if (!skippedHeader && (
                 line.toLowerCase().includes('tema') ||
                 line.toLowerCase().includes('pregunta') ||
@@ -522,19 +517,15 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
               }
               skippedHeader = true;
 
-              // Parse the CSV line
               const parts = parseCSVLine(line);
 
-              // Handle different CSV formats
               let preguntaText, opciones, correctaStr;
 
               if (parts.length >= 7) {
-                // Format: tema,pregunta,opcion1,opcion2,opcion3,opcion4,correcta
                 preguntaText = parts[1].trim();
                 opciones = [parts[2], parts[3], parts[4], parts[5]].map(op => op.trim());
                 correctaStr = parts[6].trim();
               } else if (parts.length >= 6) {
-                // Format: pregunta,opcion1,opcion2,opcion3,opcion4,correcta (no tema column)
                 preguntaText = parts[0].trim();
                 opciones = [parts[1], parts[2], parts[3], parts[4]].map(op => op.trim());
                 correctaStr = parts[5].trim();
@@ -543,7 +534,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 continue;
               }
 
-              // Validate data
               if (!preguntaText) {
                 console.log(`Line ${i + 1} in ${file.name}: Missing pregunta`);
                 continue;
@@ -560,13 +550,19 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 continue;
               }
 
-              // Create question object with tema from filename
               const preguntaObj = {
                 tema: tema,
                 pregunta: preguntaText,
                 opciones: opciones,
-                correcta: correctaNum - 1 // Convert to 0-based index
+                correcta: correctaNum - 1
               };
+
+              // ✅ VERIFICAR DUPLICADOS ANTES DE AGREGAR
+              if (preguntaExiste(preguntaObj)) {
+                console.log(`Duplicate question skipped: ${preguntaText}`);
+                duplicatesSkipped++;
+                continue;
+              }
 
               preguntas.push(preguntaObj);
               newQuestions++;
@@ -576,21 +572,28 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
             totalNewQuestions += newQuestions;
             processedFiles++;
 
-            // When all files are processed
             if (processedFiles === files.length) {
               console.log(`Total new questions added: ${totalNewQuestions}`);
+              console.log(`Duplicates skipped: ${duplicatesSkipped}`);
 
               if (totalNewQuestions === 0) {
-                showNotification('❌ No se encontraron preguntas válidas en los archivos. Revisa el formato del CSV.', 'error');
+                if (duplicatesSkipped > 0) {
+                  showNotification(`⚠️ ${duplicatesSkipped} preguntas duplicadas fueron omitidas. No se agregaron preguntas nuevas.`, 'warning');
+                } else {
+                  showNotification('❌ No se encontraron preguntas válidas en los archivos. Revisa el formato del CSV.', 'error');
+                }
                 return;
               }
 
-              // Save and update UI
               guardarPreguntas();
               mostrarTemasUnicos();
               document.getElementById('quiz').classList.add('hidden');
 
-              showNotification(`✅ ${totalNewQuestions} preguntas cargadas desde ${processedFiles} archivos`, 'success');
+              let message = `✅ ${totalNewQuestions} preguntas cargadas desde ${processedFiles} archivos`;
+              if (duplicatesSkipped > 0) {
+                message += ` (${duplicatesSkipped} duplicadas omitidas)`;
+              }
+              showNotification(message, 'success');
             }
 
           } catch (error) {
@@ -632,17 +635,17 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       preguntaActual = 0;
       aciertos = 0;
       totalRespondidas = 0;
-      quizActivo = true; // El quiz está activo
+      quizActivo = true;
       preguntasFiltradas = preguntasFiltradas.sort(() => Math.random() - 0.5);
       document.getElementById('quiz').classList.remove('hidden');
       document.getElementById('quiz').scrollIntoView({ behavior: 'smooth' });
-      document.getElementById('siguiente').disabled = true; // Deshabilitar el botón Siguiente al inicio de cada pregunta
+      document.getElementById('siguiente').disabled = true;
       mostrarPregunta();
       showNotification('🎉 ¡Quiz iniciado! ¡Buena suerte!', 'success');
     }
 
     function mostrarPregunta() {
-      if (!quizActivo) return; // Si el quiz no está activo, no muestres preguntas
+      if (!quizActivo) return;
 
       const p = preguntasFiltradas[preguntaActual];
       document.getElementById('pregunta').textContent = p.pregunta;
@@ -654,22 +657,20 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           <span class="text-lg">${op}</span>
         </label>`).join('');
 
-      // Attach event listener to each new radio button
       document.querySelectorAll('input[name="opcion"]').forEach(radio => {
         radio.addEventListener('change', handleAnswerSelection);
       });
 
-      document.getElementById('siguiente').disabled = true; // Deshabilitar el botón "Siguiente" hasta que se responda
+      document.getElementById('siguiente').disabled = true;
       document.querySelectorAll('input[name="opcion"]').forEach(r => {
-        r.disabled = false; // Asegurarse de que las opciones estén habilitadas para la nueva pregunta
-        r.parentElement.classList.remove('bg-green-100', 'border-2', 'border-green-500', 'bg-red-100', 'border-red-500'); // Limpiar estilos
-        r.parentElement.classList.add('bg-gray-50'); // Restaurar estilo original
+        r.disabled = false;
+        r.parentElement.classList.remove('bg-green-100', 'border-2', 'border-green-500', 'bg-red-100', 'border-red-500');
+        r.parentElement.classList.add('bg-gray-50');
       });
 
       actualizarEstadisticas();
       console.log('Mostrando pregunta', preguntaActual + 1, 'de', preguntasFiltradas.length);
 
-      // Add fade-in animation to options
       setTimeout(() => {
         document.querySelectorAll('.option-card').forEach((card, index) => {
           card.style.animationDelay = `${index * 0.1}s`;
