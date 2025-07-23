@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento Corporal</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .form-card, .chart-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .form-card h2, .chart-card h2 {
+            color: #4a5568;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(72, 187, 120, 0.3);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.reminder {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            box-shadow: 0 10px 25px rgba(237, 137, 54, 0.3);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #4a5568;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+
+        .data-table {
+            margin-top: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .data-table h2 {
+            color: #4a5568;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .delete-btn {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #c53030;
+            transform: scale(1.05);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Seguimiento Corporal</h1>
+            <p>Monitorea tu progreso con estilo y precisión</p>
+        </div>
+        <div style="display: flex; justify-content: end; border-radius: 10px;">
+            <a href="index.html">
+            <button style="color: white; background-color: transparent; padding: 3px; border-radius: 10px;">QuizAPP</button>
+            </a>
+      </div>
+
+        <div class="dashboard">
+            <div class="form-card">
+                <h2>📝 Nuevo Registro</h2>
+                <form id="bodyForm">
+                    <div class="form-group">
+                        <label for="date">Fecha:</label>
+                        <input type="date" id="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="weight">Peso (kg):</label>
+                        <input type="number" id="weight" step="0.1" placeholder="70.5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="chest">Pecho (cm):</label>
+                        <input type="number" id="chest" step="0.1" placeholder="95.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="waist">Cintura (cm):</label>
+                        <input type="number" id="waist" step="0.1" placeholder="80.0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="abdomen">Abdomen (cm):</label>
+                        <input type="number" id="abdomen" step="0.1" placeholder="85.0" required>
+                    </div>
+                    <button type="submit" class="btn">💾 Guardar Registro</button>
+                </form>
+            </div>
+
+            <div class="chart-card">
+                <h2>📈 Evolución Temporal</h2>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Actualizando gráfico...</p>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progressChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalRecords">0</div>
+                <div class="stat-label">Registros Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="lastWeight">--</div>
+                <div class="stat-label">Último Peso (kg)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="weightChange">--</div>
+                <div class="stat-label">Cambio de Peso</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="nextReminder">--</div>
+                <div class="stat-label">Próximo Recordatorio</div>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <h2>📋 Historial de Registros</h2>
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Peso (kg)</th>
+                        <th>Pecho (cm)</th>
+                        <th>Cintura (cm)</th>
+                        <th>Abdomen (cm)</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <script>
+        class BodyTracker {
+            constructor() {
+                this.data = JSON.parse(localStorage.getItem('bodyData') || '[]');
+                this.chart = null;
+                this.init();
+                this.checkThursdayReminder();
+                this.setupReminderInterval();
+            }
+
+            init() {
+                this.setupForm();
+                this.updateStats();
+                this.updateTable();
+                this.createChart();
+                this.setTodayDate();
+            }
+
+            setTodayDate() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('date').value = today;
+            }
+
+            setupForm() {
+                const form = document.getElementById('bodyForm');
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addRecord();
+                });
+            }
+
+            addRecord() {
+                const date = document.getElementById('date').value;
+                const weight = parseFloat(document.getElementById('weight').value);
+                const chest = parseFloat(document.getElementById('chest').value);
+                const waist = parseFloat(document.getElementById('waist').value);
+                const abdomen = parseFloat(document.getElementById('abdomen').value);
+
+                const newRecord = {
+                    id: Date.now(),
+                    date,
+                    weight,
+                    chest,
+                    waist,
+                    abdomen
+                };
+
+                // Verificar si ya existe un registro para esa fecha
+                const existingIndex = this.data.findIndex(record => record.date === date);
+                if (existingIndex !== -1) {
+                    this.data[existingIndex] = newRecord;
+                    this.showNotification('📝 Registro actualizado correctamente');
+                } else {
+                    this.data.push(newRecord);
+                    this.showNotification('✅ Registro agregado correctamente');
+                }
+
+                this.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+                this.saveData();
+                this.updateStats();
+                this.updateTable();
+                this.updateChart();
+                this.resetForm();
+            }
+
+            deleteRecord(id) {
+                if (confirm('¿Estás seguro de que quieres eliminar este registro?')) {
+                    this.data = this.data.filter(record => record.id !== id);
+                    this.saveData();
+                    this.updateStats();
+                    this.updateTable();
+                    this.updateChart();
+                    this.showNotification('🗑️ Registro eliminado');
+                }
+            }
+
+            saveData() {
+                localStorage.setItem('bodyData', JSON.stringify(this.data));
+            }
+
+            resetForm() {
+                document.getElementById('bodyForm').reset();
+                this.setTodayDate();
+            }
+
+            updateStats() {
+                const totalRecords = this.data.length;
+                document.getElementById('totalRecords').textContent = totalRecords;
+
+                if (totalRecords > 0) {
+                    const lastRecord = this.data[this.data.length - 1];
+                    document.getElementById('lastWeight').textContent = lastRecord.weight.toFixed(1);
+
+                    if (totalRecords > 1) {
+                        const firstRecord = this.data[0];
+                        const weightChange = lastRecord.weight - firstRecord.weight;
+                        const changeText = weightChange >= 0 ? `+${weightChange.toFixed(1)}` : weightChange.toFixed(1);
+                        document.getElementById('weightChange').textContent = changeText;
+                    }
+                }
+
+                // Calcular próximo jueves
+                const nextThursday = this.getNextThursday();
+                document.getElementById('nextReminder').textContent = nextThursday.toLocaleDateString('es-ES');
+            }
+
+            updateTable() {
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = '';
+
+                this.data.slice().reverse().forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(record.date).toLocaleDateString('es-ES')}</td>
+                        <td>${record.weight.toFixed(1)}</td>
+                        <td>${record.chest.toFixed(1)}</td>
+                        <td>${record.waist.toFixed(1)}</td>
+                        <td>${record.abdomen.toFixed(1)}</td>
+                        <td><button class="delete-btn" onclick="tracker.deleteRecord(${record.id})">🗑️ Eliminar</button></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+
+            createChart() {
+                const ctx = document.getElementById('progressChart').getContext('2d');
+                
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: 'Peso (kg)',
+                                data: [],
+                                borderColor: '#667eea',
+                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                tension: 0.4,
+                                fill: true
+                            },
+                            {
+                                label: 'Pecho (cm)',
+                                data: [],
+                                borderColor: '#48bb78',
+                                backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Cintura (cm)',
+                                data: [],
+                                borderColor: '#ed8936',
+                                backgroundColor: 'rgba(237, 137, 54, 0.1)',
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Abdomen (cm)',
+                                data: [],
+                                borderColor: '#e53e3e',
+                                backgroundColor: 'rgba(229, 62, 62, 0.1)',
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                beginAtZero: false,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                radius: 6,
+                                hoverRadius: 8
+                            }
+                        }
+                    }
+                });
+
+                this.updateChart();
+            }
+
+            updateChart() {
+                if (!this.chart) return;
+
+                document.getElementById('loading').classList.add('show');
+                
+                setTimeout(() => {
+                    const labels = this.data.map(record => new Date(record.date).toLocaleDateString('es-ES'));
+                    
+                    this.chart.data.labels = labels;
+                    this.chart.data.datasets[0].data = this.data.map(record => record.weight);
+                    this.chart.data.datasets[1].data = this.data.map(record => record.chest);
+                    this.chart.data.datasets[2].data = this.data.map(record => record.waist);
+                    this.chart.data.datasets[3].data = this.data.map(record => record.abdomen);
+                    
+                    this.chart.update('active');
+                    document.getElementById('loading').classList.remove('show');
+                }, 500);
+            }
+
+            getNextThursday() {
+                const today = new Date();
+                const daysUntilThursday = (4 - today.getDay() + 7) % 7;
+                const nextThursday = new Date(today);
+                nextThursday.setDate(today.getDate() + (daysUntilThursday === 0 ? 7 : daysUntilThursday));
+                return nextThursday;
+            }
+
+            checkThursdayReminder() {
+                const today = new Date();
+                if (today.getDay() === 4) { // Jueves
+                    const lastRecord = this.data[this.data.length - 1];
+                    const todayStr = today.toISOString().split('T')[0];
+                    
+                    if (!lastRecord || lastRecord.date !== todayStr) {
+                        this.showNotification('🔔 ¡Es jueves! Recuerda registrar tus medidas de seguimiento', 'reminder');
+                    }
+                }
+            }
+
+            setupReminderInterval() {
+                // Verificar cada hora si es jueves y mostrar recordatorio
+                setInterval(() => {
+                    this.checkThursdayReminder();
+                }, 3600000); // 1 hora
+            }
+
+            showNotification(message, type = 'success') {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 4000);
+            }
+        }
+
+        // Inicializar la aplicación
+        const tracker = new BodyTracker();
+
+        // Verificar permisos de notificación al cargar
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+</body>
+</html>
