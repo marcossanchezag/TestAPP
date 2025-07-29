@@ -196,7 +196,7 @@
               <p class="text-xs text-gray-500">Solo archivos CSV</p>
             </div>
           </label>
-          <input type="file" id="fileInput" accept=".csv" />
+          <input type="file" id="fileInput" accept=".csv" multiple />
         </div>
 
         <div class="mt-4 p-4 bg-gray-50 rounded-lg">
@@ -220,6 +220,15 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           <h2 class="text-2xl font-semibold text-gray-800">Seleccionar Temas</h2>
         </div>
 
+        <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+          <div class="flex items-center text-sm">
+            <div class="w-4 h-4 bg-green-400 rounded mr-2"></div>
+            <span class="mr-4">Bien preparado (≥7 y <6 días)</span>
+            <div class="w-4 h-4 bg-red-400 rounded mr-2"></div>
+            <span>Necesita repaso (<7 o >6 días)</span>
+          </div>
+        </div>
+
         <select id="temaSelect" multiple
           class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors max-h-40 sm:max-h-56 overflow-y-auto mb-4">
         </select>
@@ -237,6 +246,10 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           <button onclick="exportarPreguntas()"
             class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
             📤 Exportar CSV
+          </button>
+          <button onclick="verHistorial()"
+            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+            📊 Ver Historial
           </button>
           <button onclick="limpiarDatos()"
             class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
@@ -289,6 +302,27 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           </ul>
         </div>
       </div>
+
+      <!-- Modal para mostrar historial -->
+      <div id="historialModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+          <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+            <div class="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+              <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold">📊 Historial de Tests</h3>
+                <button onclick="cerrarHistorial()" class="text-white hover:text-gray-200">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div id="historialContent" class="p-6 overflow-y-auto max-h-[60vh]">
+              <!-- Contenido del historial se cargará aquí -->
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -299,6 +333,8 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       aciertos = 0,
       totalRespondidas = 0;
     let quizActivo = false;
+    let historialTests = {}; // Nuevo: almacena el historial de cada tema
+    let temasSeleccionados = []; // Para el quiz actual
 
     // Función para verificar si una pregunta ya existe
     function preguntaExiste(nuevaPregunta) {
@@ -309,20 +345,21 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       );
     }
 
-    // Improved storage system using cookies as fallback
-    function guardarPreguntas() {
-      const preguntasData = {
+    // Mejorado: sistema de almacenamiento que incluye historial
+    function guardarDatos() {
+      const datosCompletos = {
         preguntas: preguntas,
+        historialTests: historialTests,
         timestamp: Date.now()
       };
 
       try {
-        localStorage.setItem('quizData', JSON.stringify(preguntasData));
+        localStorage.setItem('quizData', JSON.stringify(datosCompletos));
         console.log('Datos guardados en localStorage.');
       } catch (e) {
         console.error('Error al guardar en localStorage:', e);
         try {
-          const dataStr = JSON.stringify(preguntasData);
+          const dataStr = JSON.stringify(datosCompletos);
           if (dataStr.length < 4000) {
             document.cookie = `quizData=${encodeURIComponent(dataStr)}; path=/; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`;
             console.log('Datos guardados en cookies.');
@@ -334,9 +371,8 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         }
       }
 
-      window.quizData = preguntasData;
+      window.quizData = datosCompletos;
       updateStorageIndicator();
-      showNotification('💾 Preguntas guardadas correctamente', 'success');
     }
 
     function cargarPreguntasGuardadas() {
@@ -349,6 +385,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           const data = JSON.parse(storedData);
           if (data && data.preguntas && data.preguntas.length > 0) {
             preguntas = data.preguntas;
+            historialTests = data.historialTests || {};
             window.quizData = data;
             loaded = true;
             dataSource = 'localStorage';
@@ -367,6 +404,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
               const data = JSON.parse(decodeURIComponent(value));
               if (data.preguntas && data.preguntas.length > 0) {
                 preguntas = data.preguntas;
+                historialTests = data.historialTests || {};
                 window.quizData = data;
                 loaded = true;
                 dataSource = 'cookies';
@@ -381,6 +419,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
       if (!loaded && window.quizData && window.quizData.preguntas && window.quizData.preguntas.length > 0) {
         preguntas = window.quizData.preguntas;
+        historialTests = window.quizData.historialTests || {};
         loaded = true;
         dataSource = 'memoria';
       }
@@ -393,6 +432,93 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       }
 
       return false;
+    }
+
+    // Función para determinar el estado de un tema
+    function obtenerEstadoTema(tema) {
+      const historial = historialTests[tema];
+      if (!historial || historial.length === 0) {
+        return 'neutral'; // Sin historial
+      }
+
+      // Obtener el último test
+      const ultimoTest = historial[historial.length - 1];
+      const fechaUltimoTest = new Date(ultimoTest.fecha);
+      const ahora = new Date();
+      const diasTranscurridos = Math.floor((ahora - fechaUltimoTest) / (1000 * 60 * 60 * 24));
+
+      // Calcular nota media
+      const notaMedia = historial.reduce((sum, test) => sum + test.nota, 0) / historial.length;
+
+      // Determinar estado según criterios
+      if (diasTranscurridos > 6 || notaMedia < 7) {
+        return 'rojo'; // Necesita repaso
+      } else {
+        return 'verde'; // Bien preparado
+      }
+    }
+
+    function mostrarTemasUnicos() {
+      const temas = [...new Set(preguntas.map(p => p.tema))].sort();
+      const select = document.getElementById('temaSelect');
+      
+      select.innerHTML = temas.map(tema => {
+        const estado = obtenerEstadoTema(tema);
+        const historial = historialTests[tema];
+        
+        let claseCSS = 'p-2 ';
+        let emoji = '';
+        let infoAdicional = '';
+        
+        switch(estado) {
+          case 'verde':
+            claseCSS += 'tema-option-verde';
+            emoji = '✅ ';
+            if (historial && historial.length > 0) {
+              const notaMedia = (historial.reduce((sum, test) => sum + test.nota, 0) / historial.length).toFixed(1);
+              infoAdicional = ` (${notaMedia}/10)`;
+            }
+            break;
+          case 'rojo':
+            claseCSS += 'tema-option-rojo';
+            emoji = '⚠️ ';
+            if (historial && historial.length > 0) {
+              const notaMedia = (historial.reduce((sum, test) => sum + test.nota, 0) / historial.length).toFixed(1);
+              const ultimoTest = historial[historial.length - 1];
+              const diasDesdeUltimo = Math.floor((new Date() - new Date(ultimoTest.fecha)) / (1000 * 60 * 60 * 24));
+              infoAdicional = ` (${notaMedia}/10, ${diasDesdeUltimo}d)`;
+            }
+            break;    
+          default:
+            claseCSS += 'tema-option-neutral';
+            emoji = '➖ ';
+            infoAdicional = ' (Sin evaluar)';
+        }
+        
+        return `<option value="${tema}" class="${claseCSS}">${emoji}${tema}${infoAdicional}</option>`;
+      }).join('');
+
+      console.log('Temas únicos encontrados:', temas);
+    }
+
+    // Función para guardar el resultado de un test
+    function guardarResultadoTest(temasUsados, nota) {
+      const fecha = new Date().toISOString();
+      
+      temasUsados.forEach(tema => {
+        if (!historialTests[tema]) {
+          historialTests[tema] = [];
+        }
+        
+        historialTests[tema].push({
+          fecha: fecha,
+          nota: parseFloat(nota),
+          totalPreguntas: preguntasFiltradas.filter(p => p.tema === tema).length
+        });
+      });
+      
+      guardarDatos();
+      mostrarTemasUnicos(); // Actualizar colores
     }
 
     function exportarPreguntas() {
@@ -427,6 +553,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
     function limpiarDatos() {
       preguntas = [];
       preguntasFiltradas = [];
+      historialTests = {}; // Limpiar historial también
       window.quizData = null;
 
       localStorage.removeItem('quizData');
@@ -452,7 +579,8 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
       if (preguntas.length > 0) {
         const temas = [...new Set(preguntas.map(p => p.tema))];
-        status.textContent = `💾 ${preguntas.length} preguntas, ${temas.length} temas guardados`;
+        const testsRealizados = Object.keys(historialTests).reduce((sum, tema) => sum + historialTests[tema].length, 0);
+        status.textContent = `💾 ${preguntas.length} preguntas, ${temas.length} temas, ${testsRealizados} tests realizados`;
         indicator.classList.add('active');
       } else {
         status.textContent = '💾 Sin datos guardados';
@@ -562,7 +690,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 correcta: correctaNum - 1
               };
 
-              // ✅ VERIFICAR DUPLICADOS ANTES DE AGREGAR
               if (preguntaExiste(preguntaObj)) {
                 console.log(`Duplicate question skipped: ${preguntaText}`);
                 duplicatesSkipped++;
@@ -590,7 +717,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 return;
               }
 
-              guardarPreguntas();
+              guardarDatos();
               mostrarTemasUnicos();
               document.getElementById('quiz').classList.add('hidden');
 
@@ -614,21 +741,16 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       });
     }
 
-    function mostrarTemasUnicos() {
-      const temas = [...new Set(preguntas.map(p => p.tema))].sort();
-      const select = document.getElementById('temaSelect');
-      select.innerHTML = temas.map(t => `<option value="${t}" class="p-2">${t}</option>`).join('');
-
-      console.log('Temas únicos encontrados:', temas);
-    }
-
     function aplicarFiltroTemas() {
       const seleccionados = Array.from(document.getElementById('temaSelect').selectedOptions).map(o => o.value);
       if (seleccionados.length === 0) {
         showNotification('⚠️ Selecciona al menos un tema', 'warning');
         return;
       }
+      
+      temasSeleccionados = seleccionados; // Guardar para el resultado final
       preguntasFiltradas = preguntas.filter(p => seleccionados.includes(p.tema));
+      
       if (preguntasFiltradas.length === 0) {
         showNotification('⚠️ No hay preguntas para los temas seleccionados', 'warning');
         return;
@@ -691,20 +813,16 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       const valor = parseInt(seleccionada.value);
       const correcta = preguntasFiltradas[preguntaActual].correcta;
 
-      // Incrementar contador de respuestas solo si no se ha respondido aún (simple check)
-      // Si quieres evitar que se cuente doble por múltiples clics, podrías usar una bandera `preguntaRespondida`
       if (!seleccionada.dataset.answered) {
         totalRespondidas++;
-        seleccionada.dataset.answered = true; // Marca la opción como respondida para esta pregunta
+        seleccionada.dataset.answered = true;
       }
 
       console.log('Total respondidas:', totalRespondidas);
       console.log('Valor seleccionado:', valor, 'Correcta:', correcta);
 
-      // Deshabilitar todas las opciones para la pregunta actual después de seleccionar una
       document.querySelectorAll('input[name="opcion"]').forEach(r => r.disabled = true);
 
-      // Mostrar feedback visual y actualizar aciertos
       if (valor === correcta) {
         aciertos++;
         console.log('¡Correcto! Aciertos:', aciertos);
@@ -723,10 +841,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         showNotification('❌ Incorrecto', 'error');
       }
 
-      // Habilitar el botón Siguiente
       document.getElementById('siguiente').disabled = false;
-
-      // Actualizar estadísticas
       actualizarEstadisticas();
       console.log('Estadísticas actualizadas - Aciertos:', aciertos, 'Total:', totalRespondidas);
     }
@@ -736,20 +851,22 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
       preguntaActual++;
       if (preguntaActual < preguntasFiltradas.length) {
-        // Reiniciar la bandera `answered` para la nueva pregunta
         document.querySelectorAll('input[name="opcion"]').forEach(radio => {
           delete radio.dataset.answered;
         });
         mostrarPregunta();
-        document.getElementById('siguiente').disabled = true; // Deshabilitar de nuevo
+        document.getElementById('siguiente').disabled = true;
       } else {
-        quizActivo = false; // El quiz ha terminado
-        showNotification('🎉 Quiz completado', 'success');
+        // Quiz completado - guardar resultado
+        quizActivo = false;
+        const notaFinal = totalRespondidas > 0 ? (aciertos / totalRespondidas * 10).toFixed(1) : 0;
+        
+        guardarResultadoTest(temasSeleccionados, notaFinal);
+        
+        showNotification(`🎉 Quiz completado! Nota: ${notaFinal}/10`, 'success');
         document.getElementById('quiz').classList.add('hidden');
-        // Opcional: mostrar un resumen final o reiniciar quiz
       }
     }
-
 
     function actualizarEstadisticas() {
       const preguntasContestadasSpan = document.getElementById('preguntasContestadas');
@@ -764,12 +881,80 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       console.log('Actualizando estadísticas:', { aciertos, totalRespondidas, percent });
     }
 
+    function verHistorial() {
+      const modal = document.getElementById('historialModal');
+      const content = document.getElementById('historialContent');
+      
+      if (Object.keys(historialTests).length === 0) {
+        showNotification('📊 No hay historial de tests disponible', 'info');
+        return;
+      }
+      
+      let html = '';
+      
+      Object.keys(historialTests).sort().forEach(tema => {
+        const tests = historialTests[tema];
+        const notaMedia = (tests.reduce((sum, test) => sum + test.nota, 0) / tests.length).toFixed(1);
+        const ultimoTest = tests[tests.length - 1];
+        const fechaUltimo = new Date(ultimoTest.fecha).toLocaleDateString('es-ES');
+        const diasDesdeUltimo = Math.floor((new Date() - new Date(ultimoTest.fecha)) / (1000 * 60 * 60 * 24));
+        
+        const estado = obtenerEstadoTema(tema);
+        const colorClase = estado === 'verde' ? 'text-green-600' : estado === 'rojo' ? 'text-red-600' : 'text-gray-600';
+        const estadoTexto = estado === 'verde' ? '✅ Bien preparado' : estado === 'rojo' ? '⚠️ Necesita repaso' : '➖ Sin evaluar';
+        
+        html += `
+          <div class="mb-6 p-4 border rounded-lg ${estado === 'verde' ? 'bg-green-50 border-green-200' : estado === 'rojo' ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}">
+            <div class="flex justify-between items-start mb-3">
+              <h4 class="text-lg font-semibold text-gray-800">${tema}</h4>
+              <span class="${colorClase} font-medium">${estadoTexto}</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              <div class="text-center p-2 bg-white rounded">
+                <div class="text-2xl font-bold text-blue-600">${notaMedia}</div>
+                <div class="text-sm text-gray-600">Nota Media</div>
+              </div>
+              <div class="text-center p-2 bg-white rounded">
+                <div class="text-2xl font-bold text-purple-600">${tests.length}</div>
+                <div class="text-sm text-gray-600">Tests Realizados</div>
+              </div>
+              <div class="text-center p-2 bg-white rounded">
+                <div class="text-2xl font-bold text-orange-600">${diasDesdeUltimo}</div>
+                <div class="text-sm text-gray-600">Días desde último</div>
+              </div>
+            </div>
+            
+            <div class="text-sm text-gray-600">
+              <strong>Último test:</strong> ${fechaUltimo} - Nota: ${ultimoTest.nota}/10
+            </div>
+            
+            <div class="mt-3">
+              <div class="text-sm font-medium text-gray-700 mb-2">Historial de notas:</div>
+              <div class="flex flex-wrap gap-1">
+                ${tests.map(test => {
+                  const fecha = new Date(test.fecha).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+                  const colorNota = test.nota >= 7 ? 'bg-green-100 text-green-800' : test.nota >= 5 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
+                  return `<span class="px-2 py-1 rounded text-xs ${colorNota}">${fecha}: ${test.nota}</span>`;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      
+      content.innerHTML = html;
+      modal.classList.remove('hidden');
+    }
+
+    function cerrarHistorial() {
+      document.getElementById('historialModal').classList.add('hidden');
+    }
+
     function showNotification(message, type = 'info') {
-      // Create notification element
       const notification = document.createElement('div');
       notification.className = `fixed top-4 right-4 z-50 p-4 rounded-xl shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
 
-      // Set colors based on type
       const colors = {
         success: 'bg-green-500 text-white',
         error: 'bg-red-500 text-white',
@@ -791,24 +976,27 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
       document.body.appendChild(notification);
 
-      // Animate in
       setTimeout(() => {
         notification.classList.remove('translate-x-full');
       }, 100);
 
-      // Auto remove after 5 seconds
       setTimeout(() => {
         notification.classList.add('translate-x-full');
         setTimeout(() => notification.remove(), 300);
       }, 5000);
     }
 
-    // Initialize event listeners
+    // Event listeners
     document.getElementById('fileInput').addEventListener('change', handleFile);
-    // Eliminar el listener del botón "Comprobar Respuesta" si ya no lo necesitas
-    // document.getElementById('comprobar').addEventListener('click', comprobar); 
-    document.getElementById('siguiente').addEventListener('click', siguientePregunta); // Cambiado a siguientePregunta
+    document.getElementById('siguiente').addEventListener('click', siguientePregunta);
     document.getElementById('filtrarTemas').addEventListener('click', aplicarFiltroTemas);
+
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('historialModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        cerrarHistorial();
+      }
+    });
 
     // Load data on page load
     window.addEventListener('load', () => {
@@ -817,5 +1005,4 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
   </script>
 </body>
-
 </html>
