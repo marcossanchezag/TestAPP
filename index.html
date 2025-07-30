@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quiz App Web</title>
-    <link rel="icon" href="/4eacdeaf-b3f2-4ba9-adf7-e80aca832829.jpg" type="image/x-icon">
+  <title>Quiz App Web - Cloud Storage</title>
+  <link rel="icon" href="/4eacdeaf-b3f2-4ba9-adf7-e80aca832829.jpg" type="image/x-icon">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -120,6 +120,53 @@
       border: 1px solid rgba(34, 197, 94, 0.3);
     }
 
+    .storage-indicator.syncing {
+      background: rgba(59, 130, 246, 0.2);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .cloud-status {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .cloud-status.connected {
+      background: rgba(34, 197, 94, 0.1);
+      color: #059669;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+    }
+
+    .cloud-status.disconnected {
+      background: rgba(239, 68, 68, 0.1);
+      color: #dc2626;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .cloud-status.syncing {
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .tema-option-verde {
+      background-color: #dcfce7 !important;
+      color: #166534 !important;
+    }
+
+    .tema-option-rojo {
+      background-color: #fef2f2 !important;
+      color: #991b1b !important;
+    }
+
+    .tema-option-neutral {
+      background-color: #f9fafb !important;
+      color: #374151 !important;
+    }
+
     /* Responsive styles */
     @media (max-width: 640px) {
       .container-mobile {
@@ -150,6 +197,15 @@
         margin-bottom: 0.75rem;
       }
     }
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -157,169 +213,226 @@
   <div class="container mx-auto px-4 py-8 container-mobile max-w-full sm:max-w-xl md:max-w-4xl">
     <div class="text-center mb-8 fade-in">
       <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2 text-responsive">
-        🧠 Quiz App
+        🧠 Quiz App Cloud
       </h1>
-      <p class="text-white opacity-90 text-lg">Pon a prueba tus conocimientos</p>
-      <div id="storageIndicator" class="storage-indicator mt-4 mx-auto">
-        <span id="storageStatus">💾 Sin datos guardados</span>
+      <p class="text-white opacity-90 text-lg">Pon a prueba tus conocimientos - Guardado en la nube</p>
+      
+      <!-- Cloud Status Indicator -->
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4">
+        <div id="storageIndicator" class="storage-indicator">
+          <span id="storageStatus">💾 Sin datos guardados</span>
+        </div>
+        <div id="cloudStatus" class="cloud-status disconnected">
+          <span id="cloudStatusText">☁️ Desconectado</span>
+        </div>
       </div>
-      <div style="display: flex; justify-content: end; color: white;">
-        <a href="sizes.html">
-          <button>medidas y peso</button>
-        </a>
+
+      <!-- User ID Display -->
+      <div class="mt-4">
+        <div class="bg-white bg-opacity-20 rounded-lg p-3 inline-block">
+          <span class="text-white text-sm">
+            👤 ID de Usuario: <span id="userIdDisplay" class="font-mono">-</span>
+          </span>
+        </div>
       </div>
     </div>
 
-    <div class="max-w-4xl mx-auto">
-      <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
-        <div class="flex items-center mb-4">
-          <div class="bg-blue-100 p-3 rounded-full mr-4">
-            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <!-- Cloud Configuration Section -->
+    <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
+      <div class="flex items-center mb-4">
+        <div class="bg-blue-100 p-3 rounded-full mr-4">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.003 4.003 0 003 15z"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-800">Configuración de la Nube</h2>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="userIdInput" class="block text-sm font-medium text-gray-700 mb-2">
+            ID de Usuario (para sincronizar entre dispositivos)
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="userIdInput" placeholder="Ingresa tu ID único" 
+                   class="flex-1 p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none">
+            <button onclick="conectarNube()" 
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl font-medium">
+              Conectar
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            Si no tienes un ID, se generará uno automáticamente
+          </p>
+        </div>
+
+        <div class="flex flex-col justify-center">
+          <button onclick="generarNuevoId()" 
+                  class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-medium mb-2">
+            🆕 Generar Nuevo ID
+          </button>
+          <button onclick="sincronizarDatos()" id="syncButton" disabled
+                  class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-xl font-medium disabled:opacity-50">
+            🔄 Sincronizar
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+        <h4 class="font-semibold text-gray-700 mb-2">ℹ️ Sobre el almacenamiento en la nube:</h4>
+        <ul class="text-sm text-gray-600 space-y-1">
+          <li>• Los datos se guardan automáticamente en JSONBin.io</li>
+          <li>• Usa el mismo ID de usuario en todos tus dispositivos</li>
+          <li>• Los datos se sincronizan automáticamente cada 30 segundos</li>
+          <li>• Tus datos están seguros y encriptados</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
+      <div class="flex items-center mb-4">
+        <div class="bg-blue-100 p-3 rounded-full mr-4">
+          <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-800">Cargar Preguntas</h2>
+      </div>
+
+      <div class="file-input w-full">
+        <label for="fileInput"
+          class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
+          <div class="flex flex-col items-center justify-center pt-5 pb-6">
+            <svg class="w-8 h-8 mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
+            <p class="mb-2 text-sm text-gray-500">
+              <span class="font-semibold">Click para cargar</span> o arrastra tu archivo CSV
+            </p>
+            <p class="text-xs text-gray-500">Solo archivos CSV</p>
           </div>
-          <h2 class="text-2xl font-semibold text-gray-800">Cargar Preguntas</h2>
-        </div>
+        </label>
+        <input type="file" id="fileInput" accept=".csv" multiple />
+      </div>
 
-        <div class="file-input w-full">
-          <label for="fileInput"
-            class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors">
-            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-              <svg class="w-8 h-8 mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-              </svg>
-              <p class="mb-2 text-sm text-gray-500">
-                <span class="font-semibold">Click para cargar</span> o arrastra tu archivo CSV
-              </p>
-              <p class="text-xs text-gray-500">Solo archivos CSV</p>
-            </div>
-          </label>
-          <input type="file" id="fileInput" accept=".csv" multiple />
-        </div>
-
-        <div class="mt-4 p-4 bg-gray-50 rounded-lg">
-          <h4 class="font-semibold text-gray-700 mb-2">📝 Formato CSV esperado:</h4>
-          <code class="text-sm text-gray-600 block whitespace-pre-line">
+      <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+        <h4 class="font-semibold text-gray-700 mb-2">📝 Formato CSV esperado:</h4>
+        <code class="text-sm text-gray-600 block whitespace-pre-line">
 Tema,Pregunta,Opcion1,Opcion2,Opcion3,Opcion4,RespuestaCorrecta
 Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
-          </code>
+        </code>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
+      <div class="flex items-center mb-4">
+        <div class="bg-purple-100 p-3 rounded-full mr-4">
+          <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+            </path>
+          </svg>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-800">Seleccionar Temas</h2>
+      </div>
+
+      <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+        <div class="flex items-center text-sm">
+          <div class="w-4 h-4 bg-green-400 rounded mr-2"></div>
+          <span class="mr-4">Bien preparado (≥7 y <6 días)</span>
+          <div class="w-4 h-4 bg-red-400 rounded mr-2"></div>
+          <span>Necesita repaso (<7 o >6 días)</span>
         </div>
       </div>
 
+      <select id="temaSelect" multiple
+        class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors max-h-40 sm:max-h-56 overflow-y-auto mb-4">
+      </select>
+
+      <button id="filtrarTemas"
+        class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
+        🚀 Comenzar Quiz
+      </button>
+
+      <div class="flex flex-col md:flex-row gap-2 mt-4">
+        <button onclick="exportarPreguntas()"
+          class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          📤 Exportar CSV
+        </button>
+        <button onclick="verHistorial()"
+          class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          📊 Ver Historial
+        </button>
+        <button onclick="limpiarDatos()"
+          class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+          🗑️ Limpiar Datos
+        </button>
+        <span id="datosStatus" class="text-sm text-gray-600 flex items-center px-2"></span>
+      </div>
+    </div>
+
+    <div id="quiz" class="hidden">
       <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
-        <div class="flex items-center mb-4">
-          <div class="bg-purple-100 p-3 rounded-full mr-4">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-start mb-6">
+          <div class="bg-green-100 p-3 rounded-full mr-4 flex-shrink-0">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
               </path>
             </svg>
           </div>
-          <h2 class="text-2xl font-semibold text-gray-800">Seleccionar Temas</h2>
-        </div>
-
-        <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-          <div class="flex items-center text-sm">
-            <div class="w-4 h-4 bg-green-400 rounded mr-2"></div>
-            <span class="mr-4">Bien preparado (≥7 y <6 días)</span>
-            <div class="w-4 h-4 bg-red-400 rounded mr-2"></div>
-            <span>Necesita repaso (<7 o >6 días)</span>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-gray-600 mb-2">Pregunta</h3>
+            <div id="pregunta" class="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed"></div>
           </div>
         </div>
 
-        <select id="temaSelect" multiple
-          class="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors max-h-40 sm:max-h-56 overflow-y-auto mb-4">
-        </select>
+        <div id="opciones" class="space-y-3"></div>
 
-        <button id="filtrarTemas"
-          class="btn-primary text-white px-8 py-3 rounded-xl font-semibold w-full md:w-auto btn-mobile">
-          🚀 Comenzar Quiz
-        </button>
-
-        <div class="flex flex-col md:flex-row gap-2 mt-4">
-          <button onclick="cargarPreguntasGuardadas()"
-            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            📚 Cargar Guardadas
+        <div class="flex flex-col md:flex-row gap-4 mt-8">
+          <button id="siguiente" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold btn-mobile"
+            disabled>
+            → Siguiente Pregunta
           </button>
-          <button onclick="exportarPreguntas()"
-            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            📤 Exportar CSV
-          </button>
-          <button onclick="verHistorial()"
-            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            📊 Ver Historial
-          </button>
-          <button onclick="limpiarDatos()"
-            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-            🗑️ Limpiar Datos
-          </button>
-          <span id="datosStatus" class="text-sm text-gray-600 flex items-center px-2"></span>
         </div>
       </div>
 
-      <div id="quiz" class="hidden">
-        <div class="bg-white rounded-2xl card-shadow p-6 md:p-8 mb-6 fade-in">
-          <div class="flex items-start mb-6">
-            <div class="bg-green-100 p-3 rounded-full mr-4 flex-shrink-0">
-              <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                </path>
-              </svg>
-            </div>
-            <div class="flex-1">
-              <h3 class="text-lg font-semibold text-gray-600 mb-2">Pregunta</h3>
-              <div id="pregunta" class="text-xl md:text-2xl font-bold text-gray-800 leading-relaxed"></div>
-            </div>
+      <div class="stats-card rounded-2xl card-shadow p-6 md:p-8 fade-in">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 bg-white rounded-full p-3 mr-4">
+            <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19V6h13M9 6H5a2 2 0 00-2 2v11a2 2 0 002 2h4"></path>
+            </svg>
           </div>
-
-          <div id="opciones" class="space-y-3"></div>
-
-          <div class="flex flex-col md:flex-row gap-4 mt-8">
-            <button id="siguiente" class="btn-primary text-white px-8 py-3 rounded-xl font-semibold btn-mobile"
-              disabled>
-              → Siguiente Pregunta
-            </button>
-          </div>
+          <h4 class="text-white font-semibold text-lg">Estadísticas</h4>
         </div>
-
-        <div class="stats-card rounded-2xl card-shadow p-6 md:p-8 fade-in">
-          <div class="flex items-center">
-            <div class="flex-shrink-0 bg-white rounded-full p-3 mr-4">
-              <svg class="w-6 h-6 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 19V6h13M9 6H5a2 2 0 00-2 2v11a2 2 0 002 2h4"></path>
-              </svg>
-            </div>
-            <h4 class="text-white font-semibold text-lg">Estadísticas</h4>
-          </div>
-          <ul class="mt-4 text-white text-base space-y-2">
-            <li>Preguntas contestadas: <span id="preguntasContestadas">0</span></li>
-            <li>Respuestas correctas: <span id="respuestasCorrectas">0</span></li>
-            <li>Porcentaje de aciertos: <span id="porcentajeAciertos">0%</span></li>
-          </ul>
-        </div>
+        <ul class="mt-4 text-white text-base space-y-2">
+          <li>Preguntas contestadas: <span id="preguntasContestadas">0</span></li>
+          <li>Respuestas correctas: <span id="respuestasCorrectas">0</span></li>
+          <li>Porcentaje de aciertos: <span id="porcentajeAciertos">0%</span></li>
+        </ul>
       </div>
+    </div>
 
-      <!-- Modal para mostrar historial -->
-      <div id="historialModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-        <div class="flex items-center justify-center min-h-screen p-4">
-          <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
-            <div class="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
-              <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold">📊 Historial de Tests</h3>
-                <button onclick="cerrarHistorial()" class="text-white hover:text-gray-200">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </button>
-              </div>
+    <!-- Modal para mostrar historial -->
+    <div id="historialModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+      <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden">
+          <div class="p-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+            <div class="flex justify-between items-center">
+              <h3 class="text-2xl font-bold">📊 Historial de Tests</h3>
+              <button onclick="cerrarHistorial()" class="text-white hover:text-gray-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+              </button>
             </div>
-            <div id="historialContent" class="p-6 overflow-y-auto max-h-[60vh]">
-              <!-- Contenido del historial se cargará aquí -->
-            </div>
+          </div>
+          <div id="historialContent" class="p-6 overflow-y-auto max-h-[60vh]">
+            <!-- Contenido del historial se cargará aquí -->
           </div>
         </div>
       </div>
@@ -328,13 +441,221 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
   <script>
     let preguntas = [],
-      preguntasFiltradas = [],
-      preguntaActual = 0,
-      aciertos = 0,
-      totalRespondidas = 0;
+        preguntasFiltradas = [],
+        preguntaActual = 0,
+        aciertos = 0,
+        totalRespondidas = 0;
     let quizActivo = false;
-    let historialTests = {}; // Nuevo: almacena el historial de cada tema
-    let temasSeleccionados = []; // Para el quiz actual
+    let historialTests = {};
+    let temasSeleccionados = [];
+    
+    // Cloud storage variables
+    let currentUserId = null;
+    let cloudConnected = false;
+    let syncInterval = null;
+    const API_BASE = 'https://api.jsonbin.io/v3';
+    const API_KEY = '$2a$10$qlkYxA87hxHkgvd.ttxT6.p1RWi2f7LHfNboODExO/Sm0k.QrlF76'; // API key pública para demo
+
+    // Cloud Storage Functions
+    function generarNuevoId() {
+      const newId = 'quiz_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
+      document.getElementById('userIdInput').value = newId;
+      showNotification(`🆔 Nuevo ID generado: ${newId}`, 'success');
+    }
+
+    async function conectarNube() {
+      const userIdInput = document.getElementById('userIdInput');
+      let userId = userIdInput.value.trim();
+      
+      if (!userId) {
+        // Generar ID automáticamente si no se proporciona
+        userId = 'quiz_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
+        userIdInput.value = userId;
+      }
+      
+      updateCloudStatus('syncing', '🔄 Conectando...');
+      
+      try {
+        // Intentar cargar datos existentes
+        const data = await cargarDesdeNube(userId);
+        
+        currentUserId = userId;
+        cloudConnected = true;
+        localStorage.setItem('quizUserId', userId);
+        
+        if (data) {
+          preguntas = data.preguntas || [];
+          historialTests = data.historialTests || {};
+          mostrarTemasUnicos();
+          updateStorageIndicator();
+          showNotification('☁️ Conectado y datos sincronizados', 'success');
+        } else {
+          // Primera vez con este ID - guardar datos locales en la nube
+          await guardarEnNube();
+          showNotification('☁️ Conectado - Nuevo perfil creado', 'success');
+        }
+        
+        updateCloudStatus('connected', '☁️ Conectado');
+        document.getElementById('userIdDisplay').textContent = userId;
+        document.getElementById('syncButton').disabled = false;
+        
+        // Iniciar sincronización automática
+        iniciarSincronizacionAutomatica();
+        
+      } catch (error) {
+        console.error('Error al conectar con la nube:', error);
+        cloudConnected = false;
+        updateCloudStatus('disconnected', '❌ Error de conexión');
+        showNotification('❌ Error al conectar con la nube', 'error');
+      }
+    }
+
+    async function cargarDesdeNube(userId) {
+      try {
+        const binId = generateBinId(userId);
+        const response = await fetch(`${API_BASE}/b/${binId}/latest`, {
+          headers: {
+            'X-Master-Key': API_KEY
+          }
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          return result.record;
+        } else if (response.status === 404) {
+          // Bin no existe, es normal para usuarios nuevos
+          return null;
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error al cargar desde la nube:', error);
+        return null;
+      }
+    }
+
+    async function guardarEnNube() {
+      if (!currentUserId || !cloudConnected) return false;
+      
+      try {
+        const datosCompletos = {
+          preguntas: preguntas,
+          historialTests: historialTests,
+          timestamp: Date.now(),
+          userId: currentUserId
+        };
+        
+        const binId = generateBinId(currentUserId);
+        
+        // Intentar actualizar bin existente
+        let response = await fetch(`${API_BASE}/b/${binId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify(datosCompletos)
+        });
+        
+        // Si el bin no existe, crear uno nuevo
+        if (response.status === 404) {
+          response = await fetch(`${API_BASE}/b`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': API_KEY,
+              'X-Bin-Name': `quiz-data-${currentUserId}`,
+              'X-Bin-Private': 'false'
+            },
+            body: JSON.stringify(datosCompletos)
+          });
+        }
+        
+        if (response.ok) {
+          updateStorageIndicator();
+          return true;
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Error al guardar en la nube:', error);
+        showNotification('⚠️ Error al sincronizar con la nube', 'warning');
+        return false;
+      }
+    }
+
+    async function sincronizarDatos() {
+      if (!cloudConnected) {
+        showNotification('❌ No estás conectado a la nube', 'error');
+        return;
+      }
+      
+      updateCloudStatus('syncing', '🔄 Sincronizando...');
+      
+      try {
+        // Cargar datos desde la nube
+        const cloudData = await cargarDesdeNube(currentUserId);
+        
+        if (cloudData) {
+          // Merge de datos locales y de la nube
+          const localTimestamp = localStorage.getItem('lastLocalUpdate') || 0;
+          const cloudTimestamp = cloudData.timestamp || 0;
+          
+          if (cloudTimestamp > localTimestamp) {
+            // Los datos de la nube son más recientes
+            preguntas = cloudData.preguntas || [];
+            historialTests = cloudData.historialTests || {};
+            mostrarTemasUnicos();
+            showNotification('📥 Datos actualizados desde la nube', 'success');
+          } else {
+            // Los datos locales son más recientes, subirlos
+            await guardarEnNube();
+            showNotification('📤 Datos enviados a la nube', 'success');
+          }
+        } else {
+          // No hay datos en la nube, subir los locales
+          await guardarEnNube();
+          showNotification('📤 Datos guardados en la nube', 'success');
+        }
+        
+        updateStorageIndicator();
+        updateCloudStatus('connected', '☁️ Conectado');
+        
+      } catch (error) {
+        console.error('Error en sincronización:', error);
+        updateCloudStatus('disconnected', '❌ Error');
+        showNotification('❌ Error al sincronizar', 'error');
+      }
+    }
+
+    function iniciarSincronizacionAutomatica() {
+      if (syncInterval) clearInterval(syncInterval);
+      
+      syncInterval = setInterval(async () => {
+        if (cloudConnected && currentUserId) {
+          await sincronizarDatos();
+        }
+      }, 30000); // Sincronizar cada 30 segundos
+    }
+
+    function generateBinId(userId) {
+      // Generar un ID de bin consistente basado en el userId
+      let hash = 0;
+      for (let i = 0; i < userId.length; i++) {
+        const char = userId.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
+      }
+      return Math.abs(hash).toString(16).padStart(24, '0');
+    }
+
+    function updateCloudStatus(status, text) {
+      const cloudStatus = document.getElementById('cloudStatus');
+      const cloudStatusText = document.getElementById('cloudStatusText');
+      
+      cloudStatus.className = `cloud-status ${status}`;
+      cloudStatusText.textContent = text;
+    }
 
     // Función para verificar si una pregunta ya existe
     function preguntaExiste(nuevaPregunta) {
@@ -345,39 +666,33 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       );
     }
 
-    // Mejorado: sistema de almacenamiento que incluye historial
-    function guardarDatos() {
+    // Sistema de almacenamiento mejorado con soporte para nube
+    async function guardarDatos() {
       const datosCompletos = {
         preguntas: preguntas,
         historialTests: historialTests,
         timestamp: Date.now()
       };
 
+      // Guardar localmente primero
       try {
         localStorage.setItem('quizData', JSON.stringify(datosCompletos));
-        console.log('Datos guardados en localStorage.');
+        localStorage.setItem('lastLocalUpdate', Date.now().toString());
+        console.log('Datos guardados localmente.');
       } catch (e) {
-        console.error('Error al guardar en localStorage:', e);
-        try {
-          const dataStr = JSON.stringify(datosCompletos);
-          if (dataStr.length < 4000) {
-            document.cookie = `quizData=${encodeURIComponent(dataStr)}; path=/; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}`;
-            console.log('Datos guardados en cookies.');
-          } else {
-            console.warn('Los datos son demasiado grandes para guardar en cookies.');
-          }
-        } catch (e) {
-          console.error('Error al guardar en cookies:', e);
-        }
+        console.error('Error al guardar localmente:', e);
       }
 
-      window.quizData = datosCompletos;
+      // Guardar en la nube si está conectado
+      if (cloudConnected) {
+        await guardarEnNube();
+      }
+
       updateStorageIndicator();
     }
 
     function cargarPreguntasGuardadas() {
       let loaded = false;
-      let dataSource = 'memoria';
 
       try {
         const storedData = localStorage.getItem('quizData');
@@ -386,75 +701,47 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
           if (data && data.preguntas && data.preguntas.length > 0) {
             preguntas = data.preguntas;
             historialTests = data.historialTests || {};
-            window.quizData = data;
             loaded = true;
-            dataSource = 'localStorage';
           }
         }
       } catch (e) {
-        console.error('Error al cargar desde localStorage:', e);
-      }
-
-      if (!loaded) {
-        try {
-          const cookies = document.cookie.split(';');
-          for (let cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'quizData') {
-              const data = JSON.parse(decodeURIComponent(value));
-              if (data.preguntas && data.preguntas.length > 0) {
-                preguntas = data.preguntas;
-                historialTests = data.historialTests || {};
-                window.quizData = data;
-                loaded = true;
-                dataSource = 'cookies';
-                break;
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Error al cargar desde cookies:', e);
-        }
-      }
-
-      if (!loaded && window.quizData && window.quizData.preguntas && window.quizData.preguntas.length > 0) {
-        preguntas = window.quizData.preguntas;
-        historialTests = window.quizData.historialTests || {};
-        loaded = true;
-        dataSource = 'memoria';
+        console.error('Error al cargar datos locales:', e);
       }
 
       if (loaded) {
         mostrarTemasUnicos();
         updateStorageIndicator();
-        showNotification(`📚 ${preguntas.length} preguntas cargadas desde ${dataSource}`, 'success');
-        return true;
+        console.log(`${preguntas.length} preguntas cargadas localmente`);
       }
 
-      return false;
+      // Intentar cargar ID de usuario guardado
+      const savedUserId = localStorage.getItem('quizUserId');
+      if (savedUserId) {
+        document.getElementById('userIdInput').value = savedUserId;
+        document.getElementById('userIdDisplay').textContent = savedUserId;
+      }
+
+      return loaded;
     }
 
     // Función para determinar el estado de un tema
     function obtenerEstadoTema(tema) {
       const historial = historialTests[tema];
       if (!historial || historial.length === 0) {
-        return 'neutral'; // Sin historial
+        return 'neutral';
       }
 
-      // Obtener el último test
       const ultimoTest = historial[historial.length - 1];
       const fechaUltimoTest = new Date(ultimoTest.fecha);
       const ahora = new Date();
       const diasTranscurridos = Math.floor((ahora - fechaUltimoTest) / (1000 * 60 * 60 * 24));
 
-      // Calcular nota media
       const notaMedia = historial.reduce((sum, test) => sum + test.nota, 0) / historial.length;
 
-      // Determinar estado según criterios
       if (diasTranscurridos > 6 || notaMedia < 7) {
-        return 'rojo'; // Necesita repaso
+        return 'rojo';
       } else {
-        return 'verde'; // Bien preparado
+        return 'verde';
       }
     }
 
@@ -502,7 +789,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
     }
 
     // Función para guardar el resultado de un test
-    function guardarResultadoTest(temasUsados, nota) {
+    async function guardarResultadoTest(temasUsados, nota) {
       const fecha = new Date().toISOString();
       
       temasUsados.forEach(tema => {
@@ -517,8 +804,8 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         });
       });
       
-      guardarDatos();
-      mostrarTemasUnicos(); // Actualizar colores
+      await guardarDatos();
+      mostrarTemasUnicos();
     }
 
     function exportarPreguntas() {
@@ -550,27 +837,25 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       showNotification('📤 Preguntas exportadas correctamente', 'success');
     }
 
-    function limpiarDatos() {
+    async function limpiarDatos() {
       preguntas = [];
       preguntasFiltradas = [];
-      historialTests = {}; // Limpiar historial también
-      window.quizData = null;
+      historialTests = {};
 
       localStorage.removeItem('quizData');
-      console.log('localStorage limpiado.');
+      localStorage.removeItem('lastLocalUpdate');
 
-      document.cookie = 'quizData=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-      console.log('Cookies limpiadas.');
-
-      const dataElement = document.getElementById('hiddenData');
-      if (dataElement) {
-        dataElement.textContent = '';
+      // También limpiar de la nube si está conectado
+      if (cloudConnected && currentUserId) {
+        await guardarEnNube();
+        showNotification('🗑️ Datos eliminados localmente y en la nube', 'info');
+      } else {
+        showNotification('🗑️ Datos eliminados localmente', 'info');
       }
 
       document.getElementById('temaSelect').innerHTML = '';
       document.getElementById('quiz').classList.add('hidden');
       updateStorageIndicator();
-      showNotification('🗑️ Todos los datos han sido eliminados', 'info');
     }
 
     function updateStorageIndicator() {
@@ -580,7 +865,13 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       if (preguntas.length > 0) {
         const temas = [...new Set(preguntas.map(p => p.tema))];
         const testsRealizados = Object.keys(historialTests).reduce((sum, tema) => sum + historialTests[tema].length, 0);
-        status.textContent = `💾 ${preguntas.length} preguntas, ${temas.length} temas, ${testsRealizados} tests realizados`;
+        
+        let statusText = `💾 ${preguntas.length} preguntas, ${temas.length} temas, ${testsRealizados} tests`;
+        if (cloudConnected) {
+          statusText += ' ☁️';
+        }
+        
+        status.textContent = statusText;
         indicator.classList.add('active');
       } else {
         status.textContent = '💾 Sin datos guardados';
@@ -610,7 +901,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       return result;
     }
 
-    function handleFile(event) {
+    async function handleFile(event) {
       const files = Array.from(event.target.files);
       if (files.length === 0) return;
 
@@ -624,7 +915,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         const reader = new FileReader();
         const tema = file.name.replace(/\.[^/.]+$/, "");
 
-        reader.onload = e => {
+        reader.onload = async e => {
           try {
             const content = e.target.result;
             console.log(`Processing file: ${file.name} as tema: ${tema}`);
@@ -717,7 +1008,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
                 return;
               }
 
-              guardarDatos();
+              await guardarDatos();
               mostrarTemasUnicos();
               document.getElementById('quiz').classList.add('hidden');
 
@@ -748,7 +1039,7 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         return;
       }
       
-      temasSeleccionados = seleccionados; // Guardar para el resultado final
+      temasSeleccionados = seleccionados;
       preguntasFiltradas = preguntas.filter(p => seleccionados.includes(p.tema));
       
       if (preguntasFiltradas.length === 0) {
@@ -843,10 +1134,9 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
 
       document.getElementById('siguiente').disabled = false;
       actualizarEstadisticas();
-      console.log('Estadísticas actualizadas - Aciertos:', aciertos, 'Total:', totalRespondidas);
     }
 
-    function siguientePregunta() {
+    async function siguientePregunta() {
       if (!quizActivo) return;
 
       preguntaActual++;
@@ -857,11 +1147,10 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
         mostrarPregunta();
         document.getElementById('siguiente').disabled = true;
       } else {
-        // Quiz completado - guardar resultado
         quizActivo = false;
         const notaFinal = totalRespondidas > 0 ? (aciertos / totalRespondidas * 10).toFixed(1) : 0;
         
-        guardarResultadoTest(temasSeleccionados, notaFinal);
+        await guardarResultadoTest(temasSeleccionados, notaFinal);
         
         showNotification(`🎉 Quiz completado! Nota: ${notaFinal}/10`, 'success');
         document.getElementById('quiz').classList.add('hidden');
@@ -877,8 +1166,6 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       respuestasCorrectasSpan.textContent = aciertos;
       const percent = totalRespondidas > 0 ? (aciertos / totalRespondidas * 100).toFixed(1) : 0;
       porcentajeAciertosSpan.textContent = `${percent}%`;
-
-      console.log('Actualizando estadísticas:', { aciertos, totalRespondidas, percent });
     }
 
     function verHistorial() {
@@ -998,9 +1285,25 @@ Matematicas,¿Cuánto es 2+2?,3,4,5,6,2
       }
     });
 
-    // Load data on page load
-    window.addEventListener('load', () => {
+    // Auto-conectar si hay un ID guardado
+    window.addEventListener('load', async () => {
       cargarPreguntasGuardadas();
+      
+      const savedUserId = localStorage.getItem('quizUserId');
+      if (savedUserId) {
+        document.getElementById('userIdInput').value = savedUserId;
+        // Auto-conectar después de un pequeño delay
+        setTimeout(() => {
+          conectarNube();
+        }, 1000);
+      }
+    });
+
+    // Detectar si el usuario se va de la página para sincronizar
+    window.addEventListener('beforeunload', async () => {
+      if (cloudConnected) {
+        await guardarEnNube();
+      }
     });
 
   </script>
