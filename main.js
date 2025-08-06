@@ -16,68 +16,126 @@
     const API_KEY = '$2a$10$qlkYxA87hxHkgvd.ttxT6.p1RWi2f7LHfNboODExO/Sm0k.QrlF76'; // API key pública para demo
 
     // Cloud Storage Functions
-    function generarNuevoId() {
+    window.generarNuevoId = function () {
       const newId = 'quiz_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
       document.getElementById('userIdInput').value = newId;
       showNotification(`🆔 Nuevo ID generado: ${newId}`, 'success');
     }
 
-    async function conectarNube() {
-      const userIdInput = document.getElementById('userIdInput');
-      let userId = userIdInput.value.trim();
+   // Variables globales (mantener las existentes)
+let cloudSyncing = false; // Prevenir múltiples sincronizaciones simultáneas
+
+// Función corregida para conectar a la nube
+async function conectarNube() {
+  if (cloudSyncing) {
+    console.log('Sincronización ya en progreso, cancelando...');
+    return;
+  }
+
+  const userIdInput = document.getElementById('userIdInput');
+  let userId = userIdInput.value.trim();
+  
+  if (!userId) {
+    userId = 'quiz_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
+    userIdInput.value = userId;
+  }
+  
+  cloudSyncing = true;
+  updateCloudStatus('syncing', '🔄 Conectando...');
+  
+  try {
+    // PASO 1: Intentar cargar datos desde la nube
+    console.log(`Intentando conectar con usuario: ${userId}`);
+    const cloudData = await cargarDesdeNube(userId);
+    
+    currentUserId = userId;
+    localStorage.setItem('quizUserId', userId);
+    
+    // PASO 2: Determinar qué datos usar
+    if (cloudData && cloudData.preguntas && cloudData.preguntas.length > 0) {
+      // HAY DATOS EN LA NUBE
+      console.log(`Datos encontrados en la nube: ${cloudData.preguntas.length} preguntas`);
       
-      if (!userId) {
-        // Generar ID automáticamente si no se proporciona
-        userId = 'quiz_' + Math.random().toString(36).substr(2) + Date.now().toString(36);
-        userIdInput.value = userId;
+      // Comparar timestamps si hay datos locales
+      const localData = localStorage.getItem('quizData');
+      let useCloudData = true;
+      
+      if (localData) {
+        const localParsed = JSON.parse(localData);
+        const localTimestamp = localParsed.timestamp || 0;
+        const cloudTimestamp = cloudData.timestamp || 0;
+        
+        console.log(`Timestamp local: ${localTimestamp}, nube: ${cloudTimestamp}`);
+        
+        if (localTimestamp > cloudTimestamp && localParsed.preguntas.length > 0) {
+          useCloudData = false;
+          console.log('Datos locales más recientes, se usarán los locales');
+        }
       }
       
-      updateCloudStatus('syncing', '🔄 Conectando...');
+      if (useCloudData) {
+        // Usar datos de la nube
+        preguntas = cloudData.preguntas || [];
+        historialTests = cloudData.historialTests || {};
+        showNotification('☁️ Datos cargados desde la nube', 'success');
+      } else {
+        // Subir datos locales más recientes
+        await guardarEnNube();
+        showNotification('☁️ Conectado - Datos locales más recientes subidos', 'success');
+      }
       
-      try {
-        // Intentar cargar datos existentes
-        const data = await cargarDesdeNube(userId);
-        
-        currentUserId = userId;
-        cloudConnected = true;
-        localStorage.setItem('quizUserId', userId);
-        
-        if (data) {
-          preguntas = data.preguntas || [];
-          historialTests = data.historialTests || {};
-          mostrarTemasUnicos();
-          updateStorageIndicator();
-          showNotification('☁️ Conectado y datos sincronizados', 'success');
-        } else {
-          // Primera vez con este ID - guardar datos locales en la nube
-          await guardarEnNube();
-          showNotification('☁️ Conectado - Nuevo perfil creado', 'success');
-        }
-        
-        updateCloudStatus('connected', '☁️ Conectado');
-        document.getElementById('userIdDisplay').textContent = userId;
-        document.getElementById('syncButton').disabled = false;
-        
-        // Iniciar sincronización automática
-        iniciarSincronizacionAutomatica();
-        
-      } catch (error) {
-        console.error('Error al conectar con la nube:', error);
-        cloudConnected = false;
-        updateCloudStatus('disconnected', '❌ Error de conexión');
-        showNotification('❌ Error al conectar con la nube', 'error');
+    } else {
+      // NO HAY DATOS EN LA NUBE
+      console.log('No hay datos en la nube');
+      
+      // Verificar si hay datos locales para subir
+      const localData = localStorage.getItem('quizData');
+      if (localData && preguntas.length > 0) {
+        console.log(`Subiendo ${preguntas.length} preguntas locales a la nube`);
+        await guardarEnNube();
+        showNotification('☁️ Conectado - Datos locales subidos a la nube', 'success');
+      } else {
+        showNotification('☁️ Conectado - Perfil nuevo creado', 'success');
       }
     }
-
-   async function cargarDesdeNube(userId) {
+    
+    // PASO 3: Finalizar conexión
+    cloudConnected = true;
+    updateCloudStatus('connected', '☁️ Conectado');
+    document.getElementById('userIdDisplay').textContent = userId;
+    
+    const syncButton = document.getElementById('syncButton');
+    if (syncButton) syncButton.disabled = false;
+    
+    // Actualizar UI
+    mostrarTemasUnicos();
+    updateStorageIndicator();
+    
+    // Iniciar sincronización automática
+    //iniciarSincronizacionAutomatica();
+    
+  } catch (error) {
+    console.error('Error al conectar con la nube:', error);
+    cloudConnected = false;
+    updateCloudStatus('disconnected', '❌ Error de conexión');
+    showNotification('❌ Error al conectar con la nube: ' + error.message, 'error');
+  } finally {
+    cloudSyncing = false;
+  }
+}
+  
+// Función mejorada para cargar desde la nube
+window.cargarDesdeNube = async function (userId) {
   try {
     const binId = localStorage.getItem(`binId_${userId}`);
-    if (!binId) {
-      console.warn('No hay binId almacenado para este usuario');
+    
+    if (!binId || binId === 'undefined' || binId === 'null') {
+      console.log('No hay binId válido para este usuario');
       return null;
     }
 
     const url = `${API_BASE}/b/${binId}/latest`;
+    console.log(`Cargando desde: ${url}`);
 
     const response = await fetch(url, {
       headers: {
@@ -87,9 +145,14 @@
 
     if (response.ok) {
       const result = await response.json();
+      console.log(`Datos cargados desde la nube: ${result.record.preguntas?.length || 0} preguntas`);
       return result.record;
     } else {
-      console.warn(`Error al cargar bin: ${response.status}`);
+      console.log(`Error al cargar: ${response.status}`);
+      if (response.status === 404) {
+        // Bin no existe, limpiar referencia
+        localStorage.removeItem(`binId_${userId}`);
+      }
       return null;
     }
 
@@ -99,25 +162,34 @@
   }
 }
 
+// Función corregida para guardar en la nube
+window.guardarEnNube = async function () {
+  if (!currentUserId || !cloudConnected) {
+    console.log('No se puede guardar: usuario no conectado');
+    return false;
+  }
 
-
-async function guardarEnNube() {
-  if (!currentUserId || !cloudConnected) return false;
+  if (cloudSyncing) {
+    console.log('Sincronización en progreso, saltando guardado...');
+    return false;
+  }
 
   try {
     const datosCompletos = {
-      preguntas,
-      historialTests,
+      preguntas: preguntas,
+      historialTests: historialTests,
       timestamp: Date.now(),
       userId: currentUserId
     };
 
-    // 🔁 Buscar si ya tenemos un binId real guardado
+    console.log(`Guardando en la nube: ${preguntas.length} preguntas`);
+
     let binId = localStorage.getItem(`binId_${currentUserId}`);
     let response;
 
-    if (binId) {
-      // 👉 Intentar actualizar el bin existente
+    if (binId && binId !== 'undefined' && binId !== 'null') {
+      // Intentar actualizar bin existente
+      console.log(`Actualizando bin existente: ${binId}`);
       response = await fetch(`${API_BASE}/b/${binId}`, {
         method: 'PUT',
         headers: {
@@ -127,21 +199,20 @@ async function guardarEnNube() {
         body: JSON.stringify(datosCompletos)
       });
 
-      if (response.status === 404 || response.status === 403) {
-        console.warn('Bin guardado no encontrado o no accesible. Se creará uno nuevo...');
-        binId = null; // Forzamos a crear uno nuevo
+      if (!response.ok) {
+        console.log(`Error al actualizar bin (${response.status}), creando nuevo...`);
+        binId = null;
       }
     }
 
-    // 📦 Crear bin nuevo si no existe aún
-    if (!binId) {
+    // Crear nuevo bin si es necesario
+    if (!binId || binId === 'undefined' || binId === 'null') {
+      console.log('Creando nuevo bin...');
       response = await fetch(`${API_BASE}/b`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Master-Key': API_KEY,
-          'X-Bin-Name': `quiz-data-${currentUserId}`,
-          'X-Bin-Private': 'false'
+          'X-Master-Key': API_KEY
         },
         body: JSON.stringify(datosCompletos)
       });
@@ -150,15 +221,16 @@ async function guardarEnNube() {
         const result = await response.json();
         binId = result.metadata.id;
         localStorage.setItem(`binId_${currentUserId}`, binId);
-        console.log('Nuevo bin creado:', binId);
+        console.log(`Nuevo bin creado: ${binId}`);
       }
     }
 
     if (response.ok) {
+      console.log('Datos guardados correctamente en la nube');
       updateStorageIndicator();
       return true;
     } else {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
   } catch (error) {
@@ -168,62 +240,65 @@ async function guardarEnNube() {
   }
 }
 
-    async function sincronizarDatos() {
-      if (!cloudConnected) {
-        showNotification('❌ No estás conectado a la nube', 'error');
-        return;
-      }
-      
-      updateCloudStatus('syncing', '🔄 Sincronizando...');
-      
-      try {
-        // Cargar datos desde la nube
-        const cloudData = await cargarDesdeNube(currentUserId);
-        
-        if (cloudData) {
-          // Merge de datos locales y de la nube
-          const localTimestamp = localStorage.getItem('lastLocalUpdate') || 0;
-          const cloudTimestamp = cloudData.timestamp || 0;
-          
-          if (cloudTimestamp > localTimestamp) {
-            // Los datos de la nube son más recientes
-            preguntas = cloudData.preguntas || [];
-            historialTests = cloudData.historialTests || {};
-            mostrarTemasUnicos();
-            showNotification('📥 Datos actualizados desde la nube', 'success');
-          } else {
-            // Los datos locales son más recientes, subirlos
-            await guardarEnNube();
-            showNotification('📤 Datos enviados a la nube', 'success');
-          }
-        } else {
-          // No hay datos en la nube, subir los locales
-          await guardarEnNube();
-          showNotification('📤 Datos guardados en la nube', 'success');
-        }
-        
-        updateStorageIndicator();
-        updateCloudStatus('connected', '☁️ Conectado');
-        
-      } catch (error) {
-        console.error('Error en sincronización:', error);
-        updateCloudStatus('disconnected', '❌ Error');
-        showNotification('❌ Error al sincronizar', 'error');
-      }
-    }
 
-    function iniciarSincronizacionAutomatica() {
-      if (syncInterval) clearInterval(syncInterval);
+// Función de sincronización mejorada
+window.sincronizarDatos = async function () {
+  if (!cloudConnected || !currentUserId) {
+    showNotification('❌ No estás conectado a la nube', 'error');
+    return;
+  }
+  
+  if (cloudSyncing) {
+    console.log('Sincronización ya en progreso...');
+    return;
+  }
+  
+  cloudSyncing = true;
+  updateCloudStatus('syncing', '🔄 Sincronizando...');
+  
+  try {
+    // Cargar datos desde la nube
+    const cloudData = await cargarDesdeNube(currentUserId);
+    
+    if (cloudData && cloudData.preguntas) {
+      // Comparar timestamps
+      const localTimestamp = parseInt(localStorage.getItem('lastLocalUpdate') || '0');
+      const cloudTimestamp = cloudData.timestamp || 0;
       
-      syncInterval = setInterval(async () => {
-        if (cloudConnected && currentUserId) {
-          await sincronizarDatos();
-        }
-      }, 30000); // Sincronizar cada 30 segundos
+      console.log(`Sync - Local: ${localTimestamp}, Nube: ${cloudTimestamp}`);
+      
+      if (cloudTimestamp > localTimestamp) {
+        // Datos de la nube son más recientes
+        preguntas = cloudData.preguntas || [];
+        historialTests = cloudData.historialTests || {};
+        mostrarTemasUnicos();
+        updateStorageIndicator();
+        showNotification('📥 Datos actualizados desde la nube', 'success');
+      } else {
+        // Datos locales son más recientes o iguales
+        await guardarEnNube();
+        showNotification('📤 Datos enviados a la nube', 'success');
+      }
+    } else {
+      // No hay datos en la nube, subir los locales
+      await guardarEnNube();
+      showNotification('📤 Datos guardados en la nube', 'success');
     }
+    
+    updateCloudStatus('connected', '☁️ Conectado');
+    
+  } catch (error) {
+    console.error('Error en sincronización:', error);
+    updateCloudStatus('disconnected', '❌ Error');
+    showNotification('❌ Error al sincronizar', 'error');
+  } finally {
+    cloudSyncing = false;
+  }
+}
+
 
     // Función corregida para generar BinID consistente
-function generateBinId(userId) {
+window.generateBinId = function (userId) {
   // Crear un hash más estable y consistente
   const str = `quiz-${userId}`;
   let hash = 0;
@@ -269,7 +344,7 @@ function generateBinId(userId) {
     }
 
     // Sistema de almacenamiento mejorado con soporte para nube
-    async function guardarDatos() {
+    window.guardarDatos = async function () {
       const datosCompletos = {
         preguntas: preguntas,
         historialTests: historialTests,
@@ -907,4 +982,18 @@ function generateBinId(userId) {
         await guardarEnNube();
       }
     });
+
+
+// Función para limpiar datos de la nube problemáticos
+window.limpiarDatosNube = function() {
+  if (!currentUserId) {
+    showNotification('❌ No hay usuario conectado', 'error');
+    return;
+  }
+  
+  // Limpiar binId problemático
+  localStorage.removeItem(`binId_${currentUserId}`);
+  console.log('BinId limpiado para el usuario:', currentUserId);
+  showNotification('🧹 Datos de nube limpiados. Reconecta para crear un nuevo bin.', 'info');
+}
 
