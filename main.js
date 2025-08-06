@@ -26,7 +26,7 @@
 let cloudSyncing = false; // Prevenir múltiples sincronizaciones simultáneas
 
 // Función corregida para conectar a la nube
-async function conectarNube() {
+window.conectarNube = async function () {
   if (cloudSyncing) {
     console.log('Sincronización ya en progreso, cancelando...');
     return;
@@ -56,32 +56,25 @@ async function conectarNube() {
       // HAY DATOS EN LA NUBE
       console.log(`Datos encontrados en la nube: ${cloudData.preguntas.length} preguntas`);
       
-      // Comparar timestamps si hay datos locales
-      const localData = localStorage.getItem('quizData');
-      let useCloudData = true;
+      // Comparar con datos locales actuales en memoria
+      const localCount = preguntas.length;
+      const cloudCount = cloudData.preguntas.length;
       
-      if (localData) {
-        const localParsed = JSON.parse(localData);
-        const localTimestamp = localParsed.timestamp || 0;
-        const cloudTimestamp = cloudData.timestamp || 0;
-        
-        console.log(`Timestamp local: ${localTimestamp}, nube: ${cloudTimestamp}`);
-        
-        if (localTimestamp > cloudTimestamp && localParsed.preguntas.length > 0) {
-          useCloudData = false;
-          console.log('Datos locales más recientes, se usarán los locales');
-        }
-      }
+      console.log(`Preguntas - Local en memoria: ${localCount}, Nube: ${cloudCount}`);
       
-      if (useCloudData) {
-        // Usar datos de la nube
-        preguntas = cloudData.preguntas || [];
-        historialTests = cloudData.historialTests || {};
-        showNotification('☁️ Datos cargados desde la nube', 'success');
+      // Si hay más datos en la nube, usarlos
+      if (cloudCount >= localCount) {
+        console.log('Aplicando datos de la nube (igual o mayor cantidad)');
+        preguntas = [...cloudData.preguntas]; // Crear copia para evitar referencias
+        historialTests = { ...cloudData.historialTests } || {};
+        
+        // Guardar localmente también
+        await guardarDatosLocal();
+        showNotification(`☁️ ${cloudCount} preguntas cargadas desde la nube`, 'success');
       } else {
-        // Subir datos locales más recientes
+        console.log('Manteniendo datos locales (mayor cantidad) y subiendo a la nube');
         await guardarEnNube();
-        showNotification('☁️ Conectado - Datos locales más recientes subidos', 'success');
+        showNotification('☁️ Datos locales conservados y sincronizados', 'success');
       }
       
     } else {
@@ -112,7 +105,7 @@ async function conectarNube() {
     updateStorageIndicator();
     
     // Iniciar sincronización automática
-    //iniciarSincronizacionAutomatica();
+    iniciarSincronizacionAutomatica();
     
   } catch (error) {
     console.error('Error al conectar con la nube:', error);
@@ -123,8 +116,23 @@ async function conectarNube() {
     cloudSyncing = false;
   }
 }
-  
-// Función mejorada para cargar desde la nube
+// Función auxiliar para guardar solo localmente
+async function guardarDatosLocal() {
+  const datosCompletos = {
+    preguntas: preguntas,
+    historialTests: historialTests,
+    timestamp: Date.now()
+  };
+
+  try {
+    localStorage.setItem('quizData', JSON.stringify(datosCompletos));
+    localStorage.setItem('lastLocalUpdate', Date.now().toString());
+    console.log(`Datos guardados localmente: ${preguntas.length} preguntas`);
+  } catch (e) {
+    console.error('Error al guardar localmente:', e);
+  }
+}
+  // Función mejorada para cargar desde la nube
 window.cargarDesdeNube = async function (userId) {
   try {
     const binId = localStorage.getItem(`binId_${userId}`);
@@ -161,7 +169,6 @@ window.cargarDesdeNube = async function (userId) {
     return null;
   }
 }
-
 // Función corregida para guardar en la nube
 window.guardarEnNube = async function () {
   if (!currentUserId || !cloudConnected) {
@@ -260,29 +267,55 @@ window.sincronizarDatos = async function () {
     // Cargar datos desde la nube
     const cloudData = await cargarDesdeNube(currentUserId);
     
-    if (cloudData && cloudData.preguntas) {
-      // Comparar timestamps
-      const localTimestamp = parseInt(localStorage.getItem('lastLocalUpdate') || '0');
-      const cloudTimestamp = cloudData.timestamp || 0;
+    if (cloudData && cloudData.preguntas && cloudData.preguntas.length > 0) {
+      const localCount = preguntas.length;
+      const cloudCount = cloudData.preguntas.length;
       
-      console.log(`Sync - Local: ${localTimestamp}, Nube: ${cloudTimestamp}`);
+      console.log(`Sync - Preguntas Local: ${localCount}, Nube: ${cloudCount}`);
       
-      if (cloudTimestamp > localTimestamp) {
-        // Datos de la nube son más recientes
-        preguntas = cloudData.preguntas || [];
-        historialTests = cloudData.historialTests || {};
+      // Priorizar por cantidad de preguntas en lugar de timestamp
+      if (cloudCount > localCount) {
+        // Más datos en la nube
+        console.log('Aplicando datos de la nube (más preguntas)');
+        preguntas = [...cloudData.preguntas];
+        historialTests = { ...cloudData.historialTests } || {};
+        
+        await guardarDatosLocal();
         mostrarTemasUnicos();
         updateStorageIndicator();
-        showNotification('📥 Datos actualizados desde la nube', 'success');
-      } else {
-        // Datos locales son más recientes o iguales
+        showNotification(`📥 ${cloudCount} preguntas actualizadas desde la nube`, 'success');
+        
+      } else if (localCount > cloudCount) {
+        // Más datos locales
+        console.log('Subiendo datos locales (más preguntas)');
         await guardarEnNube();
-        showNotification('📤 Datos enviados a la nube', 'success');
+        showNotification(`📤 ${localCount} preguntas enviadas a la nube`, 'success');
+        
+      } else {
+        // Misma cantidad, comparar timestamps
+        const localTimestamp = parseInt(localStorage.getItem('lastLocalUpdate') || '0');
+        const cloudTimestamp = cloudData.timestamp || 0;
+        
+        if (cloudTimestamp > localTimestamp) {
+          preguntas = [...cloudData.preguntas];
+          historialTests = { ...cloudData.historialTests } || {};
+          await guardarDatosLocal();
+          mostrarTemasUnicos();
+          updateStorageIndicator();
+          showNotification('📥 Datos actualizados desde la nube', 'success');
+        } else {
+          await guardarEnNube();
+          showNotification('📤 Datos sincronizados', 'success');
+        }
       }
     } else {
       // No hay datos en la nube, subir los locales
-      await guardarEnNube();
-      showNotification('📤 Datos guardados en la nube', 'success');
+      if (preguntas.length > 0) {
+        await guardarEnNube();
+        showNotification(`📤 ${preguntas.length} preguntas guardadas en la nube`, 'success');
+      } else {
+        showNotification('📊 Sincronización completada - Sin datos', 'info');
+      }
     }
     
     updateCloudStatus('connected', '☁️ Conectado');
@@ -295,6 +328,7 @@ window.sincronizarDatos = async function () {
     cloudSyncing = false;
   }
 }
+
 
 
     // Función corregida para generar BinID consistente
@@ -343,30 +377,30 @@ window.generateBinId = function (userId) {
       );
     }
 
-    // Sistema de almacenamiento mejorado con soporte para nube
-    window.guardarDatos = async function () {
-      const datosCompletos = {
-        preguntas: preguntas,
-        historialTests: historialTests,
-        timestamp: Date.now()
-      };
+   // Mejorar el guardado de datos local para incluir timestamp
+window.guardarDatos = async function () {
+  const datosCompletos = {
+    preguntas: preguntas,
+    historialTests: historialTests,
+    timestamp: Date.now()
+  };
 
-      // Guardar localmente primero
-      try {
-        localStorage.setItem('quizData', JSON.stringify(datosCompletos));
-        localStorage.setItem('lastLocalUpdate', Date.now().toString());
-        console.log('Datos guardados localmente.');
-      } catch (e) {
-        console.error('Error al guardar localmente:', e);
-      }
+  // Guardar localmente
+  try {
+    localStorage.setItem('quizData', JSON.stringify(datosCompletos));
+    localStorage.setItem('lastLocalUpdate', Date.now().toString());
+    console.log('Datos guardados localmente');
+  } catch (e) {
+    console.error('Error al guardar localmente:', e);
+  }
 
-      // Guardar en la nube si está conectado
-      if (cloudConnected) {
-        await guardarEnNube();
-      }
+  // Guardar en la nube si está conectado
+  if (cloudConnected && !cloudSyncing) {
+    await guardarEnNube();
+  }
 
-      updateStorageIndicator();
-    }
+  updateStorageIndicator();
+}
 
     function cargarPreguntasGuardadas() {
       let loaded = false;
@@ -983,17 +1017,52 @@ window.generateBinId = function (userId) {
       }
     });
 
-
-// Función para limpiar datos de la nube problemáticos
+// Función para limpiar datos problemáticos
 window.limpiarDatosNube = function() {
   if (!currentUserId) {
     showNotification('❌ No hay usuario conectado', 'error');
     return;
   }
   
-  // Limpiar binId problemático
   localStorage.removeItem(`binId_${currentUserId}`);
-  console.log('BinId limpiado para el usuario:', currentUserId);
+  cloudConnected = false;
+  updateCloudStatus('disconnected', '❌ Desconectado');
   showNotification('🧹 Datos de nube limpiados. Reconecta para crear un nuevo bin.', 'info');
 }
 
+// Función de sincronización automática
+window.iniciarSincronizacionAutomatica = function () {
+  // Limpiar interval previo si existe
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+  
+  // Solo iniciar si está conectado a la nube
+  if (!cloudConnected || !currentUserId) {
+    console.log('No se puede iniciar sincronización automática: no conectado');
+    return;
+  }
+  
+  console.log('Iniciando sincronización automática cada 30 segundos');
+  
+  syncInterval = setInterval(async () => {
+    if (cloudConnected && currentUserId && !cloudSyncing) {
+      try {
+        console.log('Sincronización automática ejecutándose...');
+        await sincronizarDatos();
+      } catch (error) {
+        console.error('Error en sincronización automática:', error);
+      }
+    }
+  }, 30000); // Sincronizar cada 30 segundos
+}
+
+// Función para detener sincronización automática
+window.detenerSincronizacionAutomatica = function () {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+    console.log('Sincronización automática detenida');
+  }
+}
